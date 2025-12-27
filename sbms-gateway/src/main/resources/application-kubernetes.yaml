@@ -21,25 +21,25 @@ spring:
             - Path=/api/appointments/**
           filters:
             - StripPrefix=0
-			
-        - id: appointment-service
+
+        - id: appointment-service-2
           uri: http://appointment-service:8080
-		  predicates:
+          predicates:
             - Path=/api/appointments/**
           filters:
             - StripPrefix=0
 
         # AUTH + BACKEND
         - id: sbms-backend
-          uri: http://sbms-backend:8080     # FIXED
+          uri: http://sbms-backend:8080
           predicates:
             - Path=/api/**
           filters:
-            - StripPrefix=0                 # KEEP full path
+            - StripPrefix=0
 
         # NOTIFICATION
         - id: sbms-notification
-          uri: http://sbms-notification-service:8085   # FIXED
+          uri: http://sbms-notification-service:8085
           predicates:
             - Path=/notification/**
           filters:

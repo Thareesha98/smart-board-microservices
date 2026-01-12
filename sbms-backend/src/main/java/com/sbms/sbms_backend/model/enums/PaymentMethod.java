@@ -1,0 +1,8 @@
+package com.sbms.sbms_backend.model.enums;
+
+
+public enum PaymentMethod {
+    CARD,
+    BANK_TRANSFER,
+    MOBILE_WALLET
+}

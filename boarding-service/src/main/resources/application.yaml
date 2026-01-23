@@ -1,0 +1,57 @@
+server:
+  port: 8083   # choose a free port locally (NOT 8080 to avoid conflicts)
+
+spring:
+  application:
+    name: boarding-service
+
+  # -----------------------------
+  # -----------------------------
+  datasource:
+    url: jdbc:postgresql://smart-board-db.c7miuo2k4f6h.ap-south-1.rds.amazonaws.com:5432/sbms_boarding_db
+    username: boarding_user
+    password: boarding09090909
+    driver-class-name: org.postgresql.Driver
+
+  # -----------------------------
+  # -----------------------------
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  # -----------------------------
+  # -----------------------------
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+# -----------------------------
+# -----------------------------
+sbms:
+  rabbitmq:
+    exchange: sbms.events
+
+# -----------------------------
+# -----------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# -----------------------------
+# -----------------------------
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.amqp: INFO
+    org.springframework.web: INFO

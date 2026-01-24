@@ -64,12 +64,11 @@ public class User extends BaseEntity {
 
 
 
-    // -----------------------
-    // RELATIONSHIPS
-    // (no need to fetch now — we will add later)
-    // -----------------------
-
-    // Example: one owner can have multiple boardings
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
-    private List<Boarding> boardings;   // List of ads owner created
+    @ElementCollection
+    @CollectionTable(
+        name = "owner_boardings",
+        joinColumns = @JoinColumn(name = "owner_id")
+    )
+    @Column(name = "boarding_id")
+    private List<Long> boardings;   
 }

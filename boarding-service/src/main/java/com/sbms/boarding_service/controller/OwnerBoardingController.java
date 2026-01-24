@@ -2,12 +2,22 @@ package com.sbms.boarding_service.controller;
 
 import com.sbms.boarding_service.dto.boarding.*;
 import com.sbms.boarding_service.service.OwnerBoardingService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/boardings/owner")
 @CrossOrigin
+@Tag(
+	    name = "Owner Boardings",
+	    description = "APIs for boarding owners to manage their boardings"
+	)
+	@SecurityRequirement(name = "BearerAuth")
 public class OwnerBoardingController {
 
     private final OwnerBoardingService ownerBoardingService;
@@ -16,9 +26,11 @@ public class OwnerBoardingController {
         this.ownerBoardingService = ownerBoardingService;
     }
 
-    // ----------------------------------------------------
-    // CREATE BOARDING
-    // ----------------------------------------------------
+
+    @Operation(
+            summary = "Create boarding",
+            description = "Allows a boarding owner to create a new boarding advertisement"
+        )
     @PostMapping
     public OwnerBoardingResponseDTO create(
             @RequestHeader("X-User-Id") Long ownerId,
@@ -27,9 +39,12 @@ public class OwnerBoardingController {
         return ownerBoardingService.create(ownerId, dto);
     }
 
-    // ----------------------------------------------------
-    // UPDATE BOARDING
-    // ----------------------------------------------------
+    
+    
+    @Operation(
+            summary = "Update boarding",
+            description = "Allows a boarding owner to update an existing boarding"
+        )
     @PutMapping("/{boardingId}")
     public OwnerBoardingResponseDTO update(
             @RequestHeader("X-User-Id") Long ownerId,
@@ -39,9 +54,12 @@ public class OwnerBoardingController {
         return ownerBoardingService.update(ownerId, boardingId, dto);
     }
 
-    // ----------------------------------------------------
-    // DELETE BOARDING
-    // ----------------------------------------------------
+   
+    
+    @Operation(
+            summary = "Delete boarding",
+            description = "Deletes a boarding owned by the authenticated owner"
+        )
     @DeleteMapping("/{boardingId}")
     public String delete(
             @RequestHeader("X-User-Id") Long ownerId,
@@ -51,9 +69,12 @@ public class OwnerBoardingController {
         return "Boarding deleted successfully.";
     }
 
-    // ----------------------------------------------------
-    // GET ALL OWNER BOARDINGS
-    // ----------------------------------------------------
+    
+    
+    @Operation(
+            summary = "Get owner boardings",
+            description = "Returns all boardings created by the authenticated owner"
+        )
     @GetMapping
     public List<OwnerBoardingResponseDTO> getAll(
             @RequestHeader("X-User-Id") Long ownerId
@@ -61,9 +82,10 @@ public class OwnerBoardingController {
         return ownerBoardingService.getAllByOwner(ownerId);
     }
 
-    // ----------------------------------------------------
-    // BOOST BOARDING
-    // ----------------------------------------------------
+    @Operation(
+            summary = "Boost boarding",
+            description = "Boosts a boarding advertisement for better visibility for given days"
+        )
     @PostMapping("/{boardingId}/boost")
     public OwnerBoardingResponseDTO boost(
             @RequestHeader("X-User-Id") Long ownerId,

@@ -1,3 +1,77 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: sbms-backend
+
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://smart-board-db.c7miuo2k4f6h.ap-south-1.rds.amazonaws.com:5432/smart-board
+    username: smartboard_admin
+    password: 09090909
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      max-lifetime: 300000
+
+  # JPA / Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Mail / SMTP Configuration
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: thareesha01@gmail.com
+    # Note: This is an App Password (not the actual Gmail password)
+    password: foewigznsutmonhm
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  # Multipart File Upload Settings
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  # RabbitMQ Configuration
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+
+
+aws:
+  # WARNING: Hardcoding credentials is a security risk. Use environment variables or AWS IAM roles instead.
+  accessKeyId: AKIA2AUOOUX3O5UUUYBN
+  secretAccessKey: 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
+  region: ap-south-1
+  s3:
+    bucketName: smart-board-project
+
+sbms:
+  rabbitmq:
+    exchange: sbms.events
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: DEBUG
+    com.sbms: DEBUG
+
+#url: jdbc:postgresql://smart-board-db.c7miuo2k4f6h.ap-south-1.rds.amazonaws.com:5432/smart-board

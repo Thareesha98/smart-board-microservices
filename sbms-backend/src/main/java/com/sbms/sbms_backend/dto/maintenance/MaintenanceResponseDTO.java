@@ -14,7 +14,6 @@ public class MaintenanceResponseDTO {
 
     private Long boardingId;
     private String boardingTitle;
-
     private Long studentId;
     private String studentName;
 

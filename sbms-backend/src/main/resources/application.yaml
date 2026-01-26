@@ -58,8 +58,8 @@ spring:
 
 aws:
   # WARNING: Hardcoding credentials is a security risk. Use environment variables or AWS IAM roles instead.
-  accessKeyId: AKIA2AUOOUX3O5UUUYBN
-  secretAccessKey: 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
+  accessKeyId: 
+  secretAccessKey: 
   region: ap-south-1
   s3:
     bucketName: smart-board-project

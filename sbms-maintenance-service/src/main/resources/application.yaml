@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: sbms-maintenance-service
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update      
+    show-sql: true              # optional, good for debugging
+    open-in-view: false         # recommended for microservices
+
+  
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace

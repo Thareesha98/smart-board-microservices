@@ -61,7 +61,9 @@ public class Boarding extends BaseEntity {
     private Map<String, Double> nearbyPlaces = new HashMap<>();
 
 
-    
+
+    private Double latitude;
+    private Double longitude;
     
     
     @ElementCollection(fetch = FetchType.EAGER)

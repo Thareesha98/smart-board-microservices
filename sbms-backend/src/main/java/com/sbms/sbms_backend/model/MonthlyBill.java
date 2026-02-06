@@ -20,9 +20,8 @@ import com.sbms.sbms_backend.model.enums.MonthlyBillStatus;
 )
 public class MonthlyBill extends BaseEntity {
 
-    @ManyToOne
-    @JoinColumn(name = "student_id", nullable = false)
-    private User student;
+	@Column(nullable = false)
+    private Long studentId;
 
     @Column(nullable = false)
     private Long boardingId;

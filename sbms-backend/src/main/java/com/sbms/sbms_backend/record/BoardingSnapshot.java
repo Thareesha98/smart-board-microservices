@@ -2,6 +2,8 @@ package com.sbms.sbms_backend.record;
 
 import java.math.BigDecimal;
 
+
+
 public record BoardingSnapshot(
         Long id,
         String title,

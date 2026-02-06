@@ -2,27 +2,27 @@ package com.sbms.sbms_backend.model;
 
 import com.sbms.sbms_backend.common.BaseEntity;
 import com.sbms.sbms_backend.model.enums.RegistrationStatus;
-import com.sbms.sbms_backend.model.Registration;
-import com.sbms.sbms_backend.model.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import lombok.Data;
+
+import java.time.LocalDate;
 
 @Entity
 @Data
 public class Registration extends BaseEntity{
-
-	@Column(name = "boarding_id", nullable = false)
+	
+	@Column(nullable= false)
 	private Long boardingId;
 	
-	@ManyToOne
-	@JoinColumn(name="student_id", nullable=false)
-	private User student;
+	@Column(nullable= false)
+	private Long studentId;
 	
 	@Column(nullable= false)
 	private int numberOfStudents;
@@ -39,8 +39,32 @@ public class Registration extends BaseEntity{
     @Column
     private String paymentTransactionRef;
 
+    private LocalDate moveInDate;
+    private String contractDuration;
+    private String emergencyContactName;
+    private String emergencyContactPhone;
+    private String specialRequirements;
     
     
+    
+    @Column(columnDefinition = "TEXT")
+    private String studentSignatureBase64;
+
+    
+    @Column(columnDefinition = "TEXT")
+    private String ownerSignatureBase64;
+
+    //  AGREEMENT PDF
+    private String agreementPdfPath;
+    
+    @Column(length = 64)
+    private String agreementHash;
+
+
+    
+    @Column(nullable = true, length = 20)
+    private String paymentMethod; // CARD | BANK_SLIP | CASH
+
     
 	
 }

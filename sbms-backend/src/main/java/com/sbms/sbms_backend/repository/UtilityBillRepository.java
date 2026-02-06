@@ -10,10 +10,11 @@ import java.util.Optional;
 
 public interface UtilityBillRepository extends JpaRepository<UtilityBill, Long> {
 
-    Optional<UtilityBill> findByBoardingIdAndMonth(Long boardingId, String month);
+    Optional<UtilityBill> findByBoarding_IdAndMonth(Long boardingId, String month);
 
-    List<UtilityBill> findByBoardingId(Long boardingId);
+    List<UtilityBill> findByBoarding_Owner_Id(Long ownerId);
 
- 
-    List<UtilityBill> findByBoardingIdIn(List<Long> boardingIds);
+    List<UtilityBill> findByBoarding_Id(Long boardingId);
+    List<UtilityBill> findByMonth(String month);
+
 }

@@ -23,4 +23,13 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     // Check if a student has already reviewed this boarding
     boolean existsByStudentIdAndBoardingId(Long studentId, Long boardingId);
+    
+    
+    
+
+    int countByBoardingId(Long boardingId);
+
+    List<Review> findByStudentIdOrderByCreatedAtDesc(Long studentId);
+
+    // Calculate the average rating for a boarding house
 }

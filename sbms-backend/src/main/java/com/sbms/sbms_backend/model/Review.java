@@ -24,9 +24,8 @@ public class Review extends BaseEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String comment;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id", nullable = false)
-    private User student;
+    
+    private Long studentId;
 
     @Column(name = "boarding_id", nullable = false)
     private Long boardingId;

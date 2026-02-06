@@ -13,14 +13,15 @@ public class MonthlyBillMapper {
     public static MonthlyBillResponseDTO toDTO(MonthlyBill b, 
             BillDueStatus dueStatus,
             int dueInDays,
-            Long ownerId // Passed from Service
+            Long ownerId, // Passed from Service,
+            String studentName
         ) {
     	
         MonthlyBillResponseDTO dto = new MonthlyBillResponseDTO();
 
         dto.setId(b.getId());
-        dto.setStudentId(b.getStudent().getId());
-        dto.setStudentName(b.getStudent().getFullName());
+        dto.setStudentId(b.getStudentId());
+        dto.setStudentName(studentName);
         dto.setBoardingId(b.getBoardingId());
         
         dto.setOwnerId(ownerId); // Set the passed ID

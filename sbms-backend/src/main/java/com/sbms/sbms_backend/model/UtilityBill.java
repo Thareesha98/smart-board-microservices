@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.YearMonth;
 
 import com.sbms.sbms_backend.common.BaseEntity;
+import com.sbms.sbms_backend.model.enums.MonthlyBillStatus;
 
 @Data
 @Entity
@@ -18,8 +19,11 @@ import com.sbms.sbms_backend.common.BaseEntity;
 )
 public class UtilityBill extends BaseEntity {
 
-    @Column(name = "boarding_id", nullable = false)
+	@Column(nullable = false)
     private Long boardingId;
+    
+  //  @Column(nullable = false)
+  //  private Long studentId;
 
     // YYYY-MM (e.g. 2025-01)
     @Column(name = "bill_month", nullable = false, length = 7)
@@ -30,4 +34,10 @@ public class UtilityBill extends BaseEntity {
 
     @Column(nullable = false)
     private BigDecimal waterAmount;
+    
+    @Column(nullable = true)
+    private String proofUrl;
+    
+   // @Column(nullable = true)
+    //private MonthlyBillStatus status;
 }

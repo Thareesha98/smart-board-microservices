@@ -26,6 +26,9 @@ public class BoardingDetailDTO {
     private BigDecimal pricePerMonth;
     private BigDecimal keyMoney;
     
+    private Double latitude;
+    private Double longitude;
+    
     private Gender genderType;
     private BoardingType boardingType;
     private Status status;

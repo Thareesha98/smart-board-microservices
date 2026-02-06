@@ -17,6 +17,9 @@ public class BoardingCreateDTO {
 
     private BigDecimal pricePerMonth;
     private BigDecimal keyMoney;
+    
+    private Double latitude;
+    private Double longitude;
 
     private Gender genderType;
 

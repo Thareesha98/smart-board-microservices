@@ -42,6 +42,9 @@ public class BoardingMapper {
         dto.setAddress(b.getAddress());
         dto.setPricePerMonth(b.getPricePerMonth());
         dto.setKeyMoney(b.getKeyMoney());
+        
+        dto.setLatitude(b.getLatitude());
+        dto.setLongitude(b.getLongitude());
 
         dto.setGenderType(b.getGenderType());
         dto.setBoardingType(b.getBoardingType());
@@ -71,6 +74,8 @@ public class BoardingMapper {
         b.setAddress(dto.getAddress());
         b.setPricePerMonth(dto.getPricePerMonth());
         b.setKeyMoney(dto.getKeyMoney());
+        b.setLatitude(dto.getLatitude());
+        b.setLongitude(dto.getLongitude());
         b.setGenderType(dto.getGenderType());
         b.setAvailable_slots(dto.getAvailableSlots());
         b.setMaxOccupants(dto.getMaxOccupants());
@@ -97,6 +102,9 @@ public class BoardingMapper {
         dto.setAddress(b.getAddress());
         dto.setPricePerMonth(b.getPricePerMonth());
         dto.setKeyMoney(b.getKeyMoney());
+        
+        dto.setLatitude(b.getLatitude());
+        dto.setLongitude(b.getLongitude());
 
         dto.setGenderType(b.getGenderType());
         dto.setBoardingType(b.getBoardingType());

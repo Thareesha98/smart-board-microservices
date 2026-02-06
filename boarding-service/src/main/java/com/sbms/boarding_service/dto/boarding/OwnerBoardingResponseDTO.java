@@ -24,6 +24,9 @@ public class OwnerBoardingResponseDTO {
 
     private BigDecimal pricePerMonth;
     private BigDecimal keyMoney;
+    
+    private Double latitude;
+    private Double longitude;
 
     private Gender genderType;
     private BoardingType boardingType;

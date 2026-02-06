@@ -2,6 +2,7 @@ package com.sbms.boarding_service.controller;
 
 import com.sbms.boarding_service.dto.boarding.BoardingOwnerInfo;
 import com.sbms.boarding_service.model.Boarding;
+import com.sbms.boarding_service.model.BoardingFullSnapshot;
 import com.sbms.boarding_service.model.BoardingSnapshot;
 import com.sbms.boarding_service.repository.BoardingRepository;
 
@@ -86,6 +87,23 @@ public class BoardingInternalController {
                 .toList();
     }
 
+    
+    @Operation(summary = "Get multiple boarding snapshots by IDs")
+    @PostMapping("/snapshots")
+    public List<BoardingSnapshot> getBoardingSnapshots(@RequestBody List<Long> boardingIds) {
+        return boardingRepository.findAllById(boardingIds).stream()
+                .map(b -> new BoardingSnapshot(
+                        b.getId(),
+                        b.getOwnerId(),
+                        b.getTitle(),
+                        b.getPricePerMonth(),
+                        b.getKeyMoney(),
+                        b.getAvailable_slots()
+                ))
+                .toList();
+    }
+    
+    
    
     
     @Operation(
@@ -106,6 +124,28 @@ public class BoardingInternalController {
 
         b.setAvailable_slots(b.getAvailable_slots() - count);
         boardingRepository.save(b);
+    }
+    
+    
+
+
+    
+    @GetMapping("/{boardingId}/full")
+    public BoardingFullSnapshot getBoardingFull(@PathVariable Long boardingId) {
+        Boarding b = boardingRepository.findById(boardingId)
+                .orElseThrow(() -> new RuntimeException("Boarding not found"));
+
+        return new BoardingFullSnapshot(
+                b.getId(),
+                b.getOwnerId(),
+                b.getTitle(),
+                b.getAddress(),
+                b.getPricePerMonth(),
+                b.getKeyMoney(),
+                b.getAvailable_slots(),
+                b.getImageUrls(),
+                b.getCreatedAt() // From BaseEntity
+        );
     }
 }
 

@@ -13,27 +13,40 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sbms.sbms_backend.repository.UserRepository;
+
+import org.springframework.web.bind.annotation.*;
+
+import com.sbms.sbms_backend.client.UserClient;
+import com.sbms.sbms_backend.dto.user.UserMinimalDTO;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/internal-debug")
+@RequiredArgsConstructor // Better than @Autowired for constructor injection
 public class DebugController {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    // FIX: Use Client, not Repository
+    private final UserClient userClient;
 
     @GetMapping("/user/{email}")
-    public ResponseEntity<?> checkUser(@PathVariable String email, @RequestParam(required=false) String raw) {
-        var userOpt = userRepository.findByEmail(email);
-        if (userOpt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("user-not-found");
-        var user = userOpt.get();
-        Map<String,Object> out = new HashMap<>();
+    public ResponseEntity<?> checkUser(@PathVariable String email) {
+        
+        // 1. Fetch user from User Service via Client
+        UserMinimalDTO user = userClient.findByEmail(email);
+        
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("user-not-found-in-user-service");
+        }
+
+        // 2. Prepare debug output
+        Map<String, Object> out = new HashMap<>();
+        out.put("id", user.getId());
         out.put("email", user.getEmail());
-        out.put("passwordHash", user.getPassword()); // show hash only temporarily
-        if (raw != null) out.put("matches", passwordEncoder.matches(raw, user.getPassword()));
+        out.put("role", user.getRole());
+        out.put("verified", user.isVerifiedOwner());
+        out.put("source", "User Service via Internal API");
+
         return ResponseEntity.ok(out);
     }
 }

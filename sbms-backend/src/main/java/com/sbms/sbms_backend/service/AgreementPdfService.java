@@ -1,6 +1,8 @@
 package com.sbms.sbms_backend.service;
 
 import com.sbms.sbms_backend.dto.agreement.AgreementPdfResult;
+import com.sbms.sbms_backend.dto.boarding.BoardingFullSnapshot;
+import com.sbms.sbms_backend.dto.user.UserMinimalDTO;
 import com.sbms.sbms_backend.model.Registration;
 import com.sbms.sbms_backend.util.HashUtil;
 
@@ -37,17 +39,18 @@ public class AgreementPdfService {
         this.s3Service = s3Service;
     }
 
-    public AgreementPdfResult generateAndUploadAgreement(Registration r) {
+ // Pass the external data (User and Boarding) into the method
+    public AgreementPdfResult generateAndUploadAgreement(
+            Registration r, 
+            UserMinimalDTO student, 
+            BoardingFullSnapshot boarding) {
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
             PdfWriter writer = new PdfWriter(baos);
             PdfDocument pdf = new PdfDocument(writer);
 
-            pdf.addEventHandler(
-                    PdfDocumentEvent.END_PAGE,
-                    new WatermarkHandler()
-            );
+            pdf.addEventHandler(PdfDocumentEvent.END_PAGE, new WatermarkHandler());
 
             Document doc = new Document(pdf);
             doc.setMargins(40, 40, 40, 40);
@@ -68,15 +71,18 @@ public class AgreementPdfService {
             doc.add(new Paragraph("\n"));
 
             // ================= STUDENT & OWNER =================
-            Table partyTable = new Table(new float[]{1, 1})
-                    .useAllAvailableWidth();
+            Table partyTable = new Table(new float[]{1, 1}).useAllAvailableWidth();
 
+            // Use Student DTO
             partyTable.addCell(sectionCell("Student Details",
-                    "Name: " + r.getStudent().getFullName() +
-                            "\nEmail: " + r.getStudent().getEmail()));
+                    "Name: " + student.getFullName() +
+                    "\nEmail: " + student.getEmail()));
 
+            // LOGIC FIX: Since BoardingFullSnapshot doesn't have ownerName, 
+            // we display the ID or a placeholder. 
+            // Ideally, the 'ownerName' should be fetched from UserClient in the calling service.
             partyTable.addCell(sectionCell("Owner Details",
-                    "Name: " + r.getBoarding().getOwner().getFullName()));
+                    "Owner ID: " + boarding.ownerId())); 
 
             doc.add(partyTable);
             doc.add(new Paragraph("\n"));
@@ -87,8 +93,11 @@ public class AgreementPdfService {
                     .setPadding(12);
 
             boardingBox.add(sectionTitle("Boarding Details"));
-            boardingBox.add(new Paragraph("Boarding Title: " + r.getBoarding().getTitle()));
-            boardingBox.add(new Paragraph("Key Money Paid: " + r.getBoarding().getKeyMoney()));
+            
+            // Use Boarding Record Accessors (recordName.field())
+            boardingBox.add(new Paragraph("Boarding Title: " + boarding.title()));
+            boardingBox.add(new Paragraph("Address: " + boarding.address()));
+            boardingBox.add(new Paragraph("Monthly Price: LKR " + boarding.pricePerMonth()));
             boardingBox.add(new Paragraph("Move-in Date: " + r.getMoveInDate()));
             boardingBox.add(new Paragraph("Contract Duration: " + r.getContractDuration()));
 
@@ -96,8 +105,7 @@ public class AgreementPdfService {
             doc.add(new Paragraph("\n"));
 
             // ================= SIGNATURES =================
-            Table signTable = new Table(new float[]{1, 1})
-                    .useAllAvailableWidth();
+            Table signTable = new Table(new float[]{1, 1}).useAllAvailableWidth();
 
             signTable.addCell(signatureCell(
                     "Student Signature",
@@ -113,12 +121,11 @@ public class AgreementPdfService {
             doc.add(new Paragraph("\n"));
 
             // ================= QR + FOOTER =================
-            Table footer = new Table(new float[]{1, 1})
-                    .useAllAvailableWidth();
+            Table footer = new Table(new float[]{1, 1}).useAllAvailableWidth();
 
             footer.addCell(new Cell()
-                    .add(new Paragraph("Verify Agreement Online")
-                            .setBold())
+                    .add(new Paragraph("Agreement Hash: " + r.getAgreementHash() != null ? r.getAgreementHash() : "Pending")
+                            .setFontSize(8))
                     .setBorder(Border.NO_BORDER)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE));
 
@@ -146,7 +153,6 @@ public class AgreementPdfService {
             throw new RuntimeException("Agreement PDF generation failed", e);
         }
     }
-
     // ================= HELPERS =================
 
     private Cell sectionCell(String title, String content) {

@@ -28,11 +28,7 @@ import java.util.List;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthFilter;
-
-    @Autowired
-    private CustomUserDetailsService customUserDetailsService;
+   
 
     // ---------------------------------------------------------
     // Security Filter Chain
@@ -64,49 +60,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/student/**").hasRole("STUDENT")
 
                 .anyRequest().authenticated()
-            )
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            );
 
         return http.build();
     }
-
-    // ---------------------------------------------------------
-    // Authentication Provider (UPDATED FOR SPRING BOOT 4.x)
-    // ---------------------------------------------------------
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-
-        // 🔥 NEW constructor (Spring Security 6.3)
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider(customUserDetailsService);
-
-        provider.setPasswordEncoder(passwordEncoder());
-
-        return provider;
-    }
-
-    // ---------------------------------------------------------
-    // Authentication Manager
-    // ---------------------------------------------------------
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
-            throws Exception {
-
-        return config.getAuthenticationManager();
-    }
-
-    // ---------------------------------------------------------
-    // Password Encoder (BCrypt)
-    // ---------------------------------------------------------
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    // ---------------------------------------------------------
-    // CORS
-    // ---------------------------------------------------------
+     
+    
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 

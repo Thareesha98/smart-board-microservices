@@ -5,7 +5,6 @@ import com.sbms.sbms_backend.dto.review.ReviewResponseDTO;
 import com.sbms.sbms_backend.mapper.ReviewMapper;
 import com.sbms.sbms_backend.model.Review;
 import com.sbms.sbms_backend.repository.ReviewRepository;
-import com.sbms.sbms_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,26 +17,27 @@ import java.util.stream.Collectors;
 public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ReviewMapper reviewMapper;
-    private final UserRepository userRepository;
+   
 
-    @Transactional
-    public ReviewResponseDTO saveReview(ReviewCreateDTO dto){
+        @Transactional
+        public ReviewResponseDTO saveReview(ReviewCreateDTO dto) {
 
-        //Prevent duplicate reviews
-        if(reviewRepository.existsByStudentIdAndBoardingId(dto.getStudentId(),dto.getBoardingId())){
-            throw new IllegalStateException("You have already reviewed this boarding house.");
+            // 1. Prevent duplicate reviews using the ID from the DTO
+            if (reviewRepository.existsByStudentIdAndBoardingId(dto.getStudentId(), dto.getBoardingId())) {
+                throw new IllegalStateException("You have already reviewed this boarding house.");
+            }
+
+            // 2. Map DTO to Entity 
+            // FIX: Passing studentId separately to match your updated mapper signature
+            Review review = reviewMapper.toEntity(dto, dto.getStudentId());
+
+            // 3. Save and return
+            // Note: reviewMapper.toResponseDto handles fetching the student name via UserClient
+            Review savedReview = reviewRepository.save(review);
+            
+            return reviewMapper.toResponseDto(savedReview);
         }
-
-        //Map DTO to Entity
-        Review review = reviewMapper.toEntity(dto);
-
-        //Set Student and Boarding to review
-        review.setStudent(userRepository.getReferenceById(dto.getStudentId()));
-        review.setBoardingId(dto.getBoardingId());
-
-        return reviewMapper.toResponseDto(reviewRepository.save(review));
-
-    }
+    
 
     @Transactional
     public ReviewResponseDTO updateReview(Long studentId,Long boardingId,ReviewCreateDTO dto){

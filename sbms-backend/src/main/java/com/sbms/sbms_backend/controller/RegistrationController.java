@@ -1,10 +1,10 @@
 package com.sbms.sbms_backend.controller;
 
+import com.sbms.sbms_backend.client.UserClient;
 import com.sbms.sbms_backend.dto.dashboard.StudentBoardingDashboardDTO;
 import com.sbms.sbms_backend.dto.registration.*;
-import com.sbms.sbms_backend.model.User;
+import com.sbms.sbms_backend.dto.user.UserMinimalDTO;
 import com.sbms.sbms_backend.model.enums.RegistrationStatus;
-import com.sbms.sbms_backend.repository.UserRepository;
 import com.sbms.sbms_backend.service.RegistrationService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,8 @@ public class RegistrationController {
     private RegistrationService registrationService;
     
     @Autowired
-    private UserRepository userRepository;
+    private UserClient userClient;
+
 
     // ================= STUDENT =================
 
@@ -82,11 +83,17 @@ public class RegistrationController {
             @PathVariable Long regId,
             Authentication authentication
     ) {
-        String email = authentication.getName(); // from JWT
+        // 1. Get user email from the JWT (provided by Spring Security)
+        String email = authentication.getName();
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        // 2. Resolve Student ID from the User Service via Client
+        UserMinimalDTO user = userClient.findByEmail(email);
+        
+        if (user == null) {
+            throw new RuntimeException("Student profile not found in User Service");
+        }
 
+        // 3. Fetch dashboard data using the verified student ID
         StudentBoardingDashboardDTO dto =
                 registrationService.getDashboard(regId, user.getId());
 

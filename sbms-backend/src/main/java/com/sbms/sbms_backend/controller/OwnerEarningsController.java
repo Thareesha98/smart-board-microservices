@@ -6,9 +6,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.sbms.sbms_backend.client.UserClient;
 import com.sbms.sbms_backend.dto.dashboard.OwnerEarningTransactionDTO;
 import com.sbms.sbms_backend.dto.dashboard.OwnerEarningsSummaryDTO;
-import com.sbms.sbms_backend.repository.UserRepository;
+import com.sbms.sbms_backend.dto.user.UserMinimalDTO;
 import com.sbms.sbms_backend.service.OwnerEarningsService;
 
 import lombok.RequiredArgsConstructor;
@@ -19,32 +20,38 @@ import lombok.RequiredArgsConstructor;
 public class OwnerEarningsController {
 
     private final OwnerEarningsService earningsService;
-    private final UserRepository userRepository;
+    
+    // FIX: Use UserClient instead of UserRepository
+    private final UserClient userClient; 
 
     @GetMapping("/summary")
     @PreAuthorize("hasRole('OWNER')")
     public OwnerEarningsSummaryDTO summary(Authentication auth) {
-
-        String email = auth.getName(); // JWT subject
-        Long ownerId = userRepository
-                .findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"))
-                .getId();
-
+        // Logic: Get ownerId from User Service via Client
+        Long ownerId = getOwnerIdFromAuth(auth);
         return earningsService.getSummary(ownerId);
     }
 
     @GetMapping("/transactions")
     @PreAuthorize("hasRole('OWNER')")
     public List<OwnerEarningTransactionDTO> recentTransactions(Authentication auth) {
-
-        String email = auth.getName();
-        Long ownerId = userRepository
-                .findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"))
-                .getId();
-
+        Long ownerId = getOwnerIdFromAuth(auth);
         return earningsService.recentTransactions(ownerId);
+    }
+
+    /**
+     * Helper to resolve ownerId from the authenticated email
+     */
+    private Long getOwnerIdFromAuth(Authentication auth) {
+        String email = auth.getName();
+        
+        // You should add a method to your UserClient to find user by email
+        UserMinimalDTO user = userClient.findByEmail(email); 
+        
+        if (user == null) {
+            throw new RuntimeException("Owner not found in User Service");
+        }
+        return user.getId();
     }
 }
 

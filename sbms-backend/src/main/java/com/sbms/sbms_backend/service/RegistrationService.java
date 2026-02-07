@@ -247,13 +247,10 @@ public class RegistrationService {
     @Transactional
     public RegistrationResponseDTO register(Long studentId, RegistrationRequestDTO dto) {
 
-    	BoardingSnapshot boarding =
-    	        boardingClient.getBoarding(dto.getBoardingId());
+        // 1. Fetch Boarding details via Client
+        BoardingSnapshot boarding = boardingClient.getBoarding(dto.getBoardingId());
 
-
-        User student = userRepo.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
-
+        // 2. Fetch Payment Intent (Source of Truth)
         PaymentIntent intent = paymentIntentRepo
                 .findTopByStudentIdAndBoardingIdAndTypeOrderByCreatedAtDesc(
                         studentId,
@@ -262,17 +259,21 @@ public class RegistrationService {
                 )
                 .orElseThrow(() -> new RuntimeException("Key money payment required"));
 
-        boolean keyMoneyPaid =
-                intent.getStatus() == PaymentIntentStatus.SUCCESS
-             || intent.getStatus() == PaymentIntentStatus.AWAITING_MANUAL_APPROVAL;
+        // Check payment status
+        boolean keyMoneyPaid = intent.getStatus() == PaymentIntentStatus.SUCCESS
+                 || intent.getStatus() == PaymentIntentStatus.AWAITING_MANUAL_APPROVAL;
 
         if (!keyMoneyPaid) {
             throw new RuntimeException("Key money not paid");
         }
 
+        // 3. Create Registration Entity
         Registration r = new Registration();
         r.setBoardingId(boarding.id());
-        r.setStudent(student);
+        
+        // Fix: Store the studentId, not a Student entity
+        r.setStudentId(studentId); 
+        
         r.setNumberOfStudents(dto.getNumberOfStudents());
         r.setStudentNote(dto.getStudentNote());
         r.setMoveInDate(dto.getMoveInDate());
@@ -282,38 +283,46 @@ public class RegistrationService {
         r.setStudentSignatureBase64(dto.getStudentSignatureBase64());
 
         r.setKeyMoneyPaid(true);
-     // payment method
         r.setPaymentMethod(intent.getMethod().name());
-        r.setPaymentTransactionRef(intent.getReferenceId());
-
-
-        // transaction / slip reference
-        r.setPaymentTransactionRef(intent.getReferenceId());
- // CARD / BANK_SLIP / CASH
         r.setPaymentTransactionRef(intent.getReferenceId());
         r.setStatus(RegistrationStatus.PENDING);
 
         registrationRepo.save(r);
 
-        return RegistrationMapper.toDTO(r , boarding.keyMoney() , boarding.pricePerMonth());
+        // 4. Fetch Student Info for the Mapper
+        UserMinimalDTO studentDetails = userClient.getUserMinimal(studentId);
+
+        // 5. Return mapped DTO with 4 arguments
+        return RegistrationMapper.toDTO(
+            r, 
+            boarding.keyMoney(), 
+            boarding.pricePerMonth(),
+            studentDetails
+        );
     }
 
-
     // ================= STUDENT VIEWS =================
-
     public List<RegistrationResponseDTO> getStudentRegistrations(Long studentId) {
-        
-    	List<Registration> registrations = registrationRepo.findByStudentId(studentId);
-    	
-    	List<Long> boardingIds = registrations.stream()
+        // 1. Get all registrations for the student
+        List<Registration> registrations = registrationRepo.findByStudentId(studentId);
+
+        if (registrations.isEmpty()) {
+            return List.of();
+        }
+
+        // 2. Fetch the Student details ONCE (since all registrations belong to this ID)
+        UserMinimalDTO student = userClient.getUserMinimal(studentId);
+
+        // 3. Extract unique boarding IDs and fetch snapshots in batch
+        List<Long> boardingIds = registrations.stream()
                 .map(Registration::getBoardingId)
                 .distinct()
                 .toList();
 
-        // 3. Fetch all snapshots in ONE batch call
         List<BoardingSnapshot> snapshots = boardingClient.getBoardingSnapshots(boardingIds);
-    	
-    	return registrations.stream()
+
+        // 4. Map them together using the 4-argument mapper
+        return registrations.stream()
                 .map(r -> {
                     BoardingSnapshot s = snapshots.stream()
                             .filter(snap -> snap.id().equals(r.getBoardingId()))
@@ -323,12 +332,12 @@ public class RegistrationService {
                     return RegistrationMapper.toDTO(
                         r, 
                         s != null ? s.keyMoney() : BigDecimal.ZERO, 
-                        s != null ? s.pricePerMonth() : BigDecimal.ZERO
+                        s != null ? s.pricePerMonth() : BigDecimal.ZERO,
+                        student // The 4th argument: Student details
                     );
                 })
                 .toList();
     }
-
     
     public RegistrationResponseDTO cancel(Long studentId, Long regId) {
 
@@ -336,7 +345,7 @@ public class RegistrationService {
                 .orElseThrow(() -> new RuntimeException("Registration not found"));
 
         // 1. Security Check
-        if (!r.getStudent().getId().equals(studentId)) {
+        if (!r.getStudentId().equals(studentId)) {
             throw new RuntimeException("Unauthorized");
         }
 
@@ -353,41 +362,47 @@ public class RegistrationService {
         // We need the snapshot to get the keyMoney and monthlyPrice for the DTO
         BoardingSnapshot boarding = boardingClient.getBoarding(r.getBoardingId());
 
-        // 5. Return mapped DTO with all 3 required arguments
+        UserMinimalDTO student = userClient.getUserMinimal(r.getStudentId()); // Added this call
+        
         return RegistrationMapper.toDTO(
             r, 
             boarding.keyMoney(), 
-            boarding.pricePerMonth()
+            boarding.pricePerMonth(),
+            student
         );
     }
     // ================= OWNER VIEWS =================
 
     public List<RegistrationResponseDTO> getOwnerRegistrations(Long ownerId, RegistrationStatus status) {
-        // 1. Get the list of Boarding IDs owned by this person from the Boarding Service
         List<Long> boardingIds = boardingClient.getBoardingIdsByOwner(ownerId);
 
         if (boardingIds.isEmpty()) {
             return List.of();
         }
 
-        // 2. Fetch registrations for those Boarding IDs from your local DB
         List<Registration> registrations = registrationRepo.findByBoardingIdInAndStatus(boardingIds, status);
 
         // 3. Batch fetch snapshots to get prices/titles for the DTOs
         List<BoardingSnapshot> snapshots = boardingClient.getBoardingSnapshots(boardingIds);
 
-        // 4. Map them together
+        
         return registrations.stream()
                 .map(r -> {
+                    // Find matching boarding snapshot
                     BoardingSnapshot s = snapshots.stream()
                             .filter(snap -> snap.id().equals(r.getBoardingId()))
                             .findFirst()
                             .orElse(null);
 
+                    // Fetch student details from User Service
+                    UserMinimalDTO student = userClient.getUserMinimal(r.getStudentId());
+
+                    // Call the corrected mapper with 4 arguments
                     return RegistrationMapper.toDTO(
                         r, 
                         s != null ? s.keyMoney() : BigDecimal.ZERO, 
-                        s != null ? s.pricePerMonth() : BigDecimal.ZERO
+                        s != null ? s.pricePerMonth() : BigDecimal.ZERO,
+                        student
                     );
                 })
                 .toList();
@@ -401,13 +416,14 @@ public class RegistrationService {
         Registration r = registrationRepo.findById(regId)
                 .orElseThrow(() -> new RuntimeException("Registration not found"));
 
-        BoardingSnapshot boarding = boardingClient.getBoarding(r.getBoardingId());
+        // 1. Fetch Boarding details to verify ownership
+        BoardingSnapshot boardingBasic = boardingClient.getBoarding(r.getBoardingId());
         
-        if (!boarding.ownerId().equals(ownerId)) {
+        if (!boardingBasic.ownerId().equals(ownerId)) {
             throw new RuntimeException("Unauthorized");
         }
 
-        //  Fetch payment intent again (source of truth)
+        // 2. Fetch payment intent (source of truth)
         PaymentIntent intent = paymentIntentRepo
                 .findTopByStudentIdAndBoardingIdAndTypeOrderByCreatedAtDesc(
                         r.getStudentId(),
@@ -416,64 +432,68 @@ public class RegistrationService {
                 )
                 .orElseThrow(() -> new RuntimeException("Key money payment missing"));
 
-        // PAYMENT GATE (NEW)
+        // 3. Payment Validation Gate
         if (dto.getStatus() == RegistrationStatus.APPROVED) {
-
             if (intent.getStatus() == PaymentIntentStatus.AWAITING_MANUAL_APPROVAL
                     && !dto.isApproveWithPendingPayment()) {
-
-                throw new RuntimeException(
-                    "Payment is not verified. Owner must confirm override."
-                );
+                throw new RuntimeException("Payment is not verified. Owner must confirm override.");
             }
 
             if (intent.getStatus() != PaymentIntentStatus.SUCCESS
                     && intent.getStatus() != PaymentIntentStatus.AWAITING_MANUAL_APPROVAL) {
-
                 throw new RuntimeException("Registration cannot be approved without payment");
             }
         }
 
-        // ================= APPLY DECISION =================
-
+        // 4. Apply Decision
         r.setStatus(dto.getStatus());
         r.setOwnerNote(dto.getOwnerNote());
 
+        // 5. Logic for APPROVED status
         if (dto.getStatus() == RegistrationStatus.APPROVED) {
-
             if (dto.getOwnerSignatureBase64() == null) {
                 throw new RuntimeException("Owner signature required");
             }
 
             r.setOwnerSignatureBase64(dto.getOwnerSignatureBase64());
 
-            //  AGREEMENT
-            AgreementPdfResult result =
-                    agreementPdfService.generateAndUploadAgreement(r);
+            // --- PDF GENERATION PREPARATION ---
+            // Fetch required external data for the PDF service
+            UserMinimalDTO student = userClient.getUserMinimal(r.getStudentId());
+            BoardingFullSnapshot boardingFull = boardingClient.getBoardingFull(r.getBoardingId());
+
+            // Call the 3-argument PDF service
+            AgreementPdfResult result = agreementPdfService.generateAndUploadAgreement(
+                    r, 
+                    student, 
+                    boardingFull
+            );
 
             r.setAgreementPdfPath(result.getPdfUrl());
             r.setAgreementHash(result.getPdfHash());
 
-            // 🔗 BLOCKCHAIN
+            // Blockchain integration
             agreementBlockchainService.addAgreementBlock(
                     r.getId(),
                     result.getPdfHash()
             );
 
-            //  UPDATE SLOTS
+            // Update slots in Boarding service
             boardingClient.reserveSlots(r.getBoardingId(), r.getNumberOfStudents());
         }
 
         registrationRepo.save(r);
         
-        UserMinimalDTO user = userClient.getUserMinimal(r.getStudentId());
+        // 6. Final DTO Mapping
+        // Since we already fetched the student for the PDF, we reuse it here
+        UserMinimalDTO studentForDto = userClient.getUserMinimal(r.getStudentId());
         
         return RegistrationMapper.toDTO(
                 r, 
-                boarding.keyMoney(), 
-                boarding.pricePerMonth(),
-                user
-            );
+                boardingBasic.keyMoney(), 
+                boardingBasic.pricePerMonth(),
+                studentForDto
+        );
     }
 
     

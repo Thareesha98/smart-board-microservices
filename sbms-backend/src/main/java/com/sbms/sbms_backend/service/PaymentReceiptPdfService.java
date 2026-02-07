@@ -1,10 +1,10 @@
 package com.sbms.sbms_backend.service;
 
 import com.sbms.sbms_backend.model.PaymentTransaction;
-import com.sbms.sbms_backend.model.User;
-import com.sbms.sbms_backend.model.Boarding;
-import com.sbms.sbms_backend.repository.UserRepository;
-import com.sbms.sbms_backend.repository.BoardingRepository;
+import com.sbms.sbms_backend.record.BoardingSnapshot;
+import com.sbms.sbms_backend.client.BoardingClient;
+import com.sbms.sbms_backend.client.UserClient;
+import com.sbms.sbms_backend.dto.user.UserMinimalDTO;
 
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
@@ -18,13 +18,13 @@ import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
 
 import lombok.RequiredArgsConstructor;
-
 @Service
 @RequiredArgsConstructor
 public class PaymentReceiptPdfService {
 
-    private final UserRepository userRepository;
-    private final BoardingRepository boardingRepository;
+    // FIX: Use Clients instead of Repositories
+    private final UserClient userClient;
+    private final BoardingClient boardingClient;
 
     public byte[] generate(PaymentTransaction tx) {
 
@@ -34,30 +34,32 @@ public class PaymentReceiptPdfService {
             PdfWriter.getInstance(doc, out);
             doc.open();
 
-            /* ---------- FETCH REAL DATA ---------- */
-
+            /* ---------- FETCH REAL DATA VIA CLIENTS ---------- */
+            
+            // Assuming tx.getIntent() returns the linked Intent record
             Long studentId = tx.getIntent().getStudentId();
             Long ownerId   = tx.getIntent().getOwnerId();
             Long boardingId = tx.getIntent().getBoardingId();
 
-            User student = userRepository.findById(studentId).orElse(null);
-            User owner   = userRepository.findById(ownerId).orElse(null);
-            Boarding boarding = boardingRepository.findById(boardingId).orElse(null);
+            // Fetch from User Service
+            UserMinimalDTO student = userClient.getUserMinimal(studentId);
+            UserMinimalDTO owner   = userClient.getUserMinimal(ownerId);
+            
+            // Fetch from Boarding Service
+            BoardingSnapshot boarding = boardingClient.getBoarding(boardingId);
 
             String studentName = student != null ? student.getFullName() : "N/A";
             String ownerName   = owner != null ? owner.getFullName() : "N/A";
-            String boardingTitle = boarding != null ? boarding.getTitle() : "N/A";
+            String boardingTitle = boarding != null ? boarding.title() : "N/A"; // record accessor
 
-            /* ---------- COLORS ---------- */
-            BaseColor PRIMARY = new BaseColor(37, 99, 235);   // Blue
+            /* ---------- COLORS & FONTS (Unchanged) ---------- */
+            BaseColor PRIMARY = new BaseColor(37, 99, 235);
             BaseColor DARK = new BaseColor(15, 23, 42);
             BaseColor GRAY = new BaseColor(100, 116, 139);
             BaseColor SUCCESS = new BaseColor(34, 197, 94);
 
-            /* ---------- FONTS ---------- */
             Font brand = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, PRIMARY);
             Font slogan = FontFactory.getFont(FontFactory.HELVETICA, 11, GRAY);
-
             Font section = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, DARK);
             Font label = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, GRAY);
             Font value = FontFactory.getFont(FontFactory.HELVETICA, 11, DARK);
@@ -70,8 +72,7 @@ public class PaymentReceiptPdfService {
 
             /* ---------- PAID SEAL ---------- */
             try {
-                InputStream sealStream =
-                        new ClassPathResource("pdf/paid-seal.png").getInputStream();
+                InputStream sealStream = new ClassPathResource("pdf/paid-seal.png").getInputStream();
                 Image seal = Image.getInstance(sealStream.readAllBytes());
                 seal.scaleAbsolute(120, 120);
                 seal.setAbsolutePosition(420, 700);
@@ -149,7 +150,6 @@ public class PaymentReceiptPdfService {
             throw new RuntimeException("PDF generation failed", e);
         }
     }
-
     /* ---------- HELPERS ---------- */
 
     private void addRow(PdfPTable t, String l, String v, Font lf, Font vf) {

@@ -1,9 +1,10 @@
 package com.sbms.sbms_backend.controller;
 
+import com.sbms.sbms_backend.client.UserClient;
 import com.sbms.sbms_backend.dto.payment.*;
+import com.sbms.sbms_backend.dto.user.UserMinimalDTO;
 import com.sbms.sbms_backend.model.PaymentIntent;
 import com.sbms.sbms_backend.model.PaymentTransaction;
-import com.sbms.sbms_backend.model.User;
 import com.sbms.sbms_backend.model.enums.ManualApprovalStatus;
 import com.sbms.sbms_backend.model.enums.PaymentIntentStatus;
 import com.sbms.sbms_backend.model.enums.PaymentMethod;
@@ -11,8 +12,7 @@ import com.sbms.sbms_backend.model.enums.PaymentStatus;
 import com.sbms.sbms_backend.model.enums.PaymentType;
 import com.sbms.sbms_backend.repository.PaymentIntentRepository;
 import com.sbms.sbms_backend.repository.PaymentTransactionRepository;
-import com.sbms.sbms_backend.repository.UserRepository;
-import com.sbms.sbms_backend.security.JwtService;
+
 import com.sbms.sbms_backend.service.BankSlipPaymentService;
 import com.sbms.sbms_backend.service.CashPaymentService;
 import com.sbms.sbms_backend.service.PaymentIntentService;
@@ -40,9 +40,8 @@ public class PaymentController {
     private final BankSlipPaymentService bankSlipPaymentService;
     private final PaymentIntentRepository paymentIntentRepo;
     private final PaymentTransactionRepository txRepo;
-    private final   UserRepository userRepository;
+    private final   UserClient userClient;
     
-    private final JwtService jwtService;
 
 
     // 1️ CREATE PAYMENT INTENT
@@ -52,15 +51,20 @@ public class PaymentController {
             @RequestBody CreatePaymentIntentDTO dto,
             Authentication authentication
     ) {
-        // Get user email from JWT
+        // 1. Get user email from JWT
         String email = authentication.getName();
 
-        User student = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        // 2. Resolve student ID via UserClient (Microservices Pattern)
+        UserMinimalDTO student = userClient.findByEmail(email);
+        
+        if (student == null) {
+            throw new RuntimeException("Student not found in User Service");
+        }
 
-        // FORCE studentId from JWT (not frontend)
+        // 3. FORCE studentId from resolved data (prevents ID spoofing from frontend)
         dto.setStudentId(student.getId());
 
+        // 4. Delegate to service layer
         return ResponseEntity.ok(paymentIntentService.create(dto));
     }
 
@@ -141,17 +145,18 @@ public class PaymentController {
     
     @GetMapping("/history")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<List<PaymentHistoryDTO>> history(
-            Authentication authentication,
-            @RequestHeader("Authorization") String authHeader
-    ) {
-        String token = authHeader.substring(7); // remove "Bearer "
-        Long studentId = jwtService.extractUserId(token);
+    public ResponseEntity<List<PaymentHistoryDTO>> history(Authentication authentication) {
+        
+        String email = authentication.getName();
 
-        return ResponseEntity.ok(paymentService.history(studentId));
+        UserMinimalDTO student = userClient.findByEmail(email);
+        
+        if (student == null) {
+            throw new RuntimeException("Student record not found in User Service");
+        }
+
+        return ResponseEntity.ok(paymentService.history(student.getId()));
     }
-
-
 
     // 6️ KEY MONEY STATUS (FOR REGISTRATION PAGE)
     @GetMapping("/key-money-status")

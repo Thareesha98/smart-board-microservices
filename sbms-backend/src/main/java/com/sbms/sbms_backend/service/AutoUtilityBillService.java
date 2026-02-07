@@ -1,46 +1,50 @@
 package com.sbms.sbms_backend.service;
 
 
+
 import java.math.BigDecimal;
-import java.time.YearMonth;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sbms.sbms_backend.model.Boarding;
+import com.sbms.sbms_backend.client.BoardingClient;
+import com.sbms.sbms_backend.record.BoardingSnapshot;
 import com.sbms.sbms_backend.model.UtilityBill;
-import com.sbms.sbms_backend.repository.BoardingRepository;
 import com.sbms.sbms_backend.repository.UtilityBillRepository;
 
 import lombok.RequiredArgsConstructor;
-
 @Service
 @RequiredArgsConstructor
 public class AutoUtilityBillService {
 
-    private final BoardingRepository boardingRepo;
+    private final BoardingClient boardingClient;
     private final UtilityBillRepository utilityRepo;
 
-  
     @Transactional
     public void generateForMonth(String month) {
+        // 1. Get all unique Boarding IDs that already have bills or exist in your system
+        // Since we can't 'findAll' from remote, we fetch snapshots for IDs we know about
+        List<Long> knownBoardingIds = utilityRepo.findAllDistinctBoardingIds();
 
-        List<Boarding> boardings = boardingRepo.findAll();
+        if (knownBoardingIds.isEmpty()) return;
 
-        for (Boarding boarding : boardings) {
+        // 2. Use existing Client method to get data for these IDs
+        List<BoardingSnapshot> boardings = boardingClient.getBoardingSnapshots(knownBoardingIds);
+
+        for (BoardingSnapshot boarding : boardings) {
 
             boolean exists = utilityRepo
-                    .findByBoarding_IdAndMonth(boarding.getId(), month)
+                    .findByBoardingIdAndMonth(boarding.id(), month)
                     .isPresent();
 
             if (exists) continue;
 
             UtilityBill bill = new UtilityBill();
-            bill.setBoarding(boarding);
+            bill.setBoardingId(boarding.id()); // Use ID, not Entity
             bill.setMonth(month);
 
-            // 🔹 Default / estimated utilities
+            // 🔹 Default / estimated utilities using Record accessors
             bill.setElectricityAmount(defaultElectricity(boarding));
             bill.setWaterAmount(defaultWater(boarding));
 
@@ -48,18 +52,11 @@ public class AutoUtilityBillService {
         }
     }
 
-    /* =========================
-       DEFAULT LOGIC (REALISTIC)
-    ========================= */
-
-    private BigDecimal defaultElectricity(Boarding boarding) {
-        // Example logic — can evolve later
-        return boarding.getPricePerMonth()
-                .multiply(new BigDecimal("0.15")); // ~15%
+    private BigDecimal defaultElectricity(BoardingSnapshot boarding) {
+        return boarding.pricePerMonth().multiply(new BigDecimal("0.15"));
     }
 
-    private BigDecimal defaultWater(Boarding boarding) {
-        return boarding.getPricePerMonth()
-                .multiply(new BigDecimal("0.05")); // ~5%
+    private BigDecimal defaultWater(BoardingSnapshot boarding) {
+        return boarding.pricePerMonth().multiply(new BigDecimal("0.05"));
     }
 }

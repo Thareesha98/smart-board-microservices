@@ -8,13 +8,13 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sbms.sbms_backend.client.BoardingClient;
 import com.sbms.sbms_backend.dto.billing.CreateUtilityBillDTO;
 import com.sbms.sbms_backend.dto.billing.UtilityBillResponseDTO;
 import com.sbms.sbms_backend.mapper.UtilityBillMapper;
-import com.sbms.sbms_backend.model.Boarding;
 import com.sbms.sbms_backend.model.UtilityBill;
 import com.sbms.sbms_backend.model.enums.RegistrationStatus;
-import com.sbms.sbms_backend.repository.BoardingRepository;
+import com.sbms.sbms_backend.record.BoardingSnapshot;
 import com.sbms.sbms_backend.repository.RegistrationRepository;
 import com.sbms.sbms_backend.repository.UtilityBillRepository;
 
@@ -25,65 +25,77 @@ import lombok.RequiredArgsConstructor;
 public class UtilityBillService {
 
     private final UtilityBillRepository utilityRepo;
-    private final BoardingRepository boardingRepo;
     private final RegistrationRepository registrationRepo;
     private final MonthlyBillService monthlyBillService;
+    private final BoardingClient boardingClient;
 
-    @Transactional
-    public void createOrUpdate(CreateUtilityBillDTO dto) {
+    
+        @Transactional
+        public void createOrUpdate(CreateUtilityBillDTO dto) {
 
-        Boarding boarding = boardingRepo.findById(dto.getBoardingId())
-                .orElseThrow();
+            // 1. Verify the boarding exists in the Boarding Service
+            // This replaces boardingRepo.findById()
+            BoardingSnapshot boarding = boardingClient.getBoarding(dto.getBoardingId());
+            if (boarding == null) {
+                throw new RuntimeException("Boarding house not found");
+            }
 
-        UtilityBill bill = utilityRepo
-                .findByBoarding_IdAndMonth(dto.getBoardingId(), dto.getMonth())
-                .orElseGet(UtilityBill::new);
+            // 2. Find existing bill or create new (Match your new repository name)
+            UtilityBill bill = utilityRepo
+                    .findByBoardingIdAndMonth(dto.getBoardingId(), dto.getMonth())
+                    .orElseGet(UtilityBill::new);
 
-        bill.setBoarding(boarding);
-        bill.setMonth(dto.getMonth());
-        bill.setElectricityAmount(dto.getElectricityAmount());
-        bill.setWaterAmount(dto.getWaterAmount());
-        bill.setProofUrl(dto.getProofUrl());
+            // 3. Set properties (Using ID, not the Boarding object)
+            bill.setBoardingId(dto.getBoardingId()); 
+            bill.setMonth(dto.getMonth());
+            bill.setElectricityAmount(dto.getElectricityAmount());
+            bill.setWaterAmount(dto.getWaterAmount());
+            bill.setProofUrl(dto.getProofUrl());
 
-        utilityRepo.save(bill);
+            utilityRepo.save(bill);
 
-        // 🔥 IMPORTANT: generate student bills AFTER owner input
-        monthlyBillService.generateBillsForMonth(dto.getMonth());
-    }
+            //  IMPORTANT: Trigger student bill generation
+            // This will fetch snapshots and registrations internally as we fixed earlier
+            monthlyBillService.generateBillsForMonth(dto.getMonth());
+        }
+        public List<UtilityBillResponseDTO> getForOwner(Long ownerId) {
+            // 1. Ask Boarding Service: "Which boarding houses does this owner have?"
+            List<Long> boardingIds = boardingClient.getBoardingIdsByOwner(ownerId);
 
-    public List<UtilityBillResponseDTO> getForOwner(Long ownerId) {
+            if (boardingIds.isEmpty()) {
+                return List.of();
+            }
 
-        return utilityRepo.findByBoarding_Owner_Id(ownerId)
-                .stream()
-                .map(this::map)
-                .toList();
-    }
+            // 2. Fetch Utility bills from local DB where boardingId is in the list
+            // FIX: Using findByBoardingIdIn instead of the impossible cross-service join
+            return utilityRepo.findByBoardingIdIn(boardingIds)
+                    .stream()
+                    .map(this::map)
+                    .toList();
+        }
 
-    private UtilityBillResponseDTO map(UtilityBill bill) {
+        private UtilityBillResponseDTO map(UtilityBill bill) {
+            // ... (This logic remains the same as our previous fix) ...
+            // It fetches Boarding Title from Client and Student Count from local Reg Repo
+            BoardingSnapshot boarding = boardingClient.getBoarding(bill.getBoardingId());
+            String boardingName = (boarding != null) ? boarding.title() : "Unknown Boarding";
 
-        int studentCount = registrationRepo
-                .countByBoarding_IdAndStatus(
-                        bill.getBoarding().getId(),
-                        RegistrationStatus.APPROVED
-                );
+            int studentCount = (int) registrationRepo.countByBoardingIdAndStatus(
+                    bill.getBoardingId(), RegistrationStatus.APPROVED);
 
-        BigDecimal perStudent =
-                studentCount == 0
-                        ? BigDecimal.ZERO
-                        : bill.getElectricityAmount()
-                              .add(bill.getWaterAmount())
-                              .divide(BigDecimal.valueOf(studentCount), 2, RoundingMode.HALF_UP);
+            BigDecimal total = bill.getElectricityAmount().add(bill.getWaterAmount());
+            BigDecimal perStudent = studentCount == 0 ? BigDecimal.ZERO 
+                    : total.divide(BigDecimal.valueOf(studentCount), 2, RoundingMode.HALF_UP);
 
-        UtilityBillResponseDTO dto = new UtilityBillResponseDTO();
-        dto.setId(bill.getId());
-        dto.setBoardingId(bill.getBoarding().getId());
-        dto.setBoardingName(bill.getBoarding().getTitle());
-        dto.setMonth(bill.getMonth());
-        dto.setElectricityAmount(bill.getElectricityAmount());
-        dto.setWaterAmount(bill.getWaterAmount());
-        dto.setPerStudentUtility(perStudent);
-
-        return dto;
-    }
+            UtilityBillResponseDTO dto = new UtilityBillResponseDTO();
+            dto.setId(bill.getId());
+            dto.setBoardingId(bill.getBoardingId());
+            dto.setBoardingName(boardingName);
+            dto.setMonth(bill.getMonth());
+            dto.setElectricityAmount(bill.getElectricityAmount());
+            dto.setWaterAmount(bill.getWaterAmount());
+            dto.setPerStudentUtility(perStudent);
+            return dto;
+        }
 }
 

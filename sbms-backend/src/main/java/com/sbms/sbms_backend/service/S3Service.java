@@ -90,4 +90,27 @@ public class S3Service {
                 .build()
         );
     }
+    
+   
+    public byte[] downloadFile(String fileUrlOrKey) {
+        String key;
+
+        if (fileUrlOrKey.contains(".com/")) {
+            key = fileUrlOrKey.substring(fileUrlOrKey.indexOf(".com/") + 5);
+        } else {
+            key = fileUrlOrKey;
+        }
+
+        try {
+            return s3Client.getObjectAsBytes(
+                    GetObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(key)
+                            .build()
+            ).asByteArray();
+
+        } catch (S3Exception e) {
+            throw new RuntimeException("Failed to download file from S3: " + e.awsErrorDetails().errorMessage(), e);
+        }
+    }
 }

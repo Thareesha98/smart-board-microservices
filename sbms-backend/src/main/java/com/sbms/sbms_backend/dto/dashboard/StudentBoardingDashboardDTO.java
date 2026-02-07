@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.sbms.sbms_backend.model.enums.RegistrationStatus;
-import com.sbms.sbms_monolith.dto.dashboard.StudentBoardingDashboardDTO;
 import com.sbms.sbms_monolith.dto.dashboard.StudentBoardingDashboardDTO.MemberDTO;
 
 @Data

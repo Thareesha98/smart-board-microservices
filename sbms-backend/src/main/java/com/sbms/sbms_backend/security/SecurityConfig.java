@@ -43,14 +43,37 @@ public class SecurityConfig {
                     sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
+            		
+            		 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                 .requestMatchers(
                         "/api/auth/**",
                         "/internal/**",
                       //  "/api/appointments/**" ,
                         "/api/boardings",
-                        "/api/boardings/**"
+                        "/api/boardings/**",
+                        
+                        "/ws/**",
+
+                        "/api/users/public/**",
+                        
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html"
                 ).permitAll()
+                
+                .requestMatchers("/api/payments/**").hasRole("STUDENT")
+
+                .requestMatchers("/api/owner/**").hasRole("OWNER")
+                .requestMatchers("/api/boardings/owner/**").hasRole("OWNER")
+
+                .requestMatchers("/api/reports/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/reports/**").hasAnyRole("STUDENT", "OWNER")
+
+                .requestMatchers("/api/student/**").hasRole("STUDENT")
+                .requestMatchers("/api/bills/student/**").hasRole("STUDENT")
+                
+
 
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 

@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: sbms-payment-service
+
+services:
+  registration:
+    base-url: http://registration-service.sbms.svc.cluster.local

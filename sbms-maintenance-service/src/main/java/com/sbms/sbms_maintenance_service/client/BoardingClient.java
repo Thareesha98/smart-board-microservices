@@ -7,7 +7,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import com.sbms.sbms_maintenance_service.dto.maintenance.BoardingOwnerInfo;
+
 import lombok.RequiredArgsConstructor;
+
+
+
 
 @Component
 @RequiredArgsConstructor
@@ -16,21 +21,36 @@ public class BoardingClient {
     private final RestTemplate restTemplate;
 
     private static final String BASE =
-            "http://boarding-service/api/boardings/internal";
+            "http://boarding-service:8080/api/boardings/internal";
 
+    // -------------------------------------------------
+    // Validate boarding exists
+    // -------------------------------------------------
     public void validateBoarding(Long boardingId) {
-        restTemplate.getForObject(BASE + "/" + boardingId, Void.class);
+        restTemplate.exchange(
+                BASE + "/" + boardingId,
+                HttpMethod.GET,
+                null,
+                Void.class
+        );
     }
 
-    public Long getBoardingOwner(Long boardingId) {
+    // -------------------------------------------------
+    // Get owner info (returns BoardingOwnerInfo)
+    // -------------------------------------------------
+    public BoardingOwnerInfo getBoardingOwner(Long boardingId) {
         return restTemplate.getForObject(
                 BASE + "/" + boardingId + "/owner",
-                Long.class);
+                BoardingOwnerInfo.class
+        );
     }
 
+    // -------------------------------------------------
+    // Get boarding IDs by owner ✅ FIXED
+    // -------------------------------------------------
     public List<Long> getBoardingIdsByOwner(Long ownerId) {
         return restTemplate.exchange(
-                BASE + "/owner/" + ownerId,
+                BASE + "/owner/" + ownerId + "/ids",
                 HttpMethod.GET,
                 null,
                 new ParameterizedTypeReference<List<Long>>() {}

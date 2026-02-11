@@ -46,7 +46,6 @@ public class PaymentController {
 
     // 1️ CREATE PAYMENT INTENT
     @PostMapping("/intent")
-    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<PaymentIntent> createIntent(
             @RequestBody CreatePaymentIntentDTO dto,
             Authentication authentication

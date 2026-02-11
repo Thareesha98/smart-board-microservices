@@ -103,11 +103,7 @@ public class ReportController {
                 )
         );
     }
-
-    // =========================
-    // 7. ADMIN: DISMISS
-    // =========================
-    @PutMapping("/{id}/dismiss")
+   @PutMapping("/{id}/dismiss")
     public ResponseEntity<ReportResponseDTO> dismiss(
             @PathVariable Long id,
             @RequestHeader("X-User-Role") String role,
@@ -123,9 +119,6 @@ public class ReportController {
         );
     }
 
-    // =========================
-    // INTERNAL
-    // =========================
     private void enforceAdmin(String role) {
         if (!"ADMIN".equalsIgnoreCase(role)) {
             throw new RuntimeException("Admin access required");

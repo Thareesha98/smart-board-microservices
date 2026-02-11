@@ -22,6 +22,48 @@ public class RegistrationMapper {
     		Registration r, 
     		BigDecimal keyMoney,
     	    BigDecimal monthlyPrice,
+    	    UserMinimalDTO user,
+    	    String boardingTitle
+    	  
+    	    
+    		
+    		) {
+        RegistrationResponseDTO dto = new RegistrationResponseDTO();
+
+        dto.setId(r.getId());
+
+        dto.setBoardingId(r.getBoardingId());
+        dto.setBoardingTitle(boardingTitle);
+
+        dto.setStudentId(r.getStudentId());
+        dto.setStudentName(user.getFullName());
+        dto.setStudentEmail(user.getEmail());
+
+        dto.setNumberOfStudents(r.getNumberOfStudents());
+        dto.setStatus(r.getStatus());
+        dto.setStudentNote(r.getStudentNote());
+        dto.setOwnerNote(r.getOwnerNote());
+
+        dto.setKeyMoney(keyMoney);
+        dto.setMonthlyPrice(monthlyPrice);
+        dto.setKeyMoneyPaid(r.isKeyMoneyPaid());
+        dto.setPaymentSlipUrl(r.getPaymentTransactionRef());
+        dto.setAgreementPdfPath(r.getAgreementPdfPath());
+
+        
+        dto.setPaymentMethod(r.getPaymentMethod());
+
+
+        return dto;
+    }
+    
+    
+    
+    
+    public static RegistrationResponseDTO toDTO(
+    		Registration r, 
+    		BigDecimal keyMoney,
+    	    BigDecimal monthlyPrice,
     	    UserMinimalDTO user
     	  
     	    
@@ -55,4 +97,8 @@ public class RegistrationMapper {
 
         return dto;
     }
+    
+    
+    
+    
 }

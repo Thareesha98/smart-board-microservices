@@ -19,7 +19,7 @@ public class AdminReportMapper {
         dto.setBoardingId(r.getBoardingId());
 
         // Set IDs only. 
-        // IMPORTANT: The names (senderName, reportedUserName) MUST be set in the 
+        // IMPRTANT: The names (senderName, reportedUserName) MUST be set in the 
         // Service layer using your UserClient (WebClient).
         dto.setSenderId(r.getReporterId());
         dto.setReportedUserId(r.getReportedUserId());

@@ -82,6 +82,12 @@ public class NotificationEventListener {
             case "registration.approved" -> "Registration approved";
             case "review.added" -> "New review received";
             case "maintenance.requested" -> "Maintenance request sent";
+            
+            case "maintenance.updated" -> "Maintenance updated";
+            case "maintenance.completed" -> "Maintenance completed";
+            case "maintenance.rejected" -> "Maintenance rejected";
+
+            
             default -> "Notification";
         };
     }

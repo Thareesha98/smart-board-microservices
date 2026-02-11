@@ -333,7 +333,8 @@ public class RegistrationService {
                         r, 
                         s != null ? s.keyMoney() : BigDecimal.ZERO, 
                         s != null ? s.pricePerMonth() : BigDecimal.ZERO,
-                        student // The 4th argument: Student details
+                        student, // The 4th argument: Student details 
+                        s != null ? s.title(): null
                     );
                 })
                 .toList();
@@ -373,40 +374,55 @@ public class RegistrationService {
     }
     // ================= OWNER VIEWS =================
 
-    public List<RegistrationResponseDTO> getOwnerRegistrations(Long ownerId, RegistrationStatus status) {
+    public List<RegistrationResponseDTO> getOwnerRegistrations(
+            Long ownerId,
+            RegistrationStatus status
+    ) {
         List<Long> boardingIds = boardingClient.getBoardingIdsByOwner(ownerId);
 
         if (boardingIds.isEmpty()) {
             return List.of();
         }
 
-        List<Registration> registrations = registrationRepo.findByBoardingIdInAndStatus(boardingIds, status);
+        List<Registration> registrations;
 
-        // 3. Batch fetch snapshots to get prices/titles for the DTOs
-        List<BoardingSnapshot> snapshots = boardingClient.getBoardingSnapshots(boardingIds);
+        if (status == null) {
+            registrations = registrationRepo.findByBoardingIdIn(boardingIds);
+        } else {
+            registrations = registrationRepo.findByBoardingIdInAndStatus(
+                    boardingIds,
+                    status
+            );
+        }
 
-        
+        if (registrations.isEmpty()) {
+            return List.of();
+        }
+
+        // Batch fetch snapshots
+        List<BoardingSnapshot> snapshots =
+                boardingClient.getBoardingSnapshots(boardingIds);
+
         return registrations.stream()
                 .map(r -> {
-                    // Find matching boarding snapshot
                     BoardingSnapshot s = snapshots.stream()
-                            .filter(snap -> snap.id().equals(r.getBoardingId()))
+                            .filter(b -> b.id().equals(r.getBoardingId()))
                             .findFirst()
                             .orElse(null);
 
-                    // Fetch student details from User Service
-                    UserMinimalDTO student = userClient.getUserMinimal(r.getStudentId());
+                    UserMinimalDTO student =
+                            userClient.getUserMinimal(r.getStudentId());
 
-                    // Call the corrected mapper with 4 arguments
                     return RegistrationMapper.toDTO(
-                        r, 
-                        s != null ? s.keyMoney() : BigDecimal.ZERO, 
-                        s != null ? s.pricePerMonth() : BigDecimal.ZERO,
-                        student
+                            r,
+                            s != null ? s.keyMoney() : BigDecimal.ZERO,
+                            s != null ? s.pricePerMonth() : BigDecimal.ZERO,
+                            student
                     );
                 })
                 .toList();
     }
+
 
     // ================= OWNER DECISION =================
 

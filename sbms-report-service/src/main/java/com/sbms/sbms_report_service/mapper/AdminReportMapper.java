@@ -16,7 +16,7 @@ public class AdminReportMapper {
         dto.setStatus(r.getStatus());
         dto.setSubmissionDate(r.getSubmissionDate());
         dto.setIncidentDate(r.getIncidentDate());
-        dto.setBoardingName(r.getBoardingName());
+        dto.setBoardingId(r.getBoardingId());
 
         // Set IDs only. 
         // IMPORTANT: The names (senderName, reportedUserName) MUST be set in the 

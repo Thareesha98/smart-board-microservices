@@ -24,7 +24,7 @@ public class UserClient {
       public boolean userExists(Long userId) {
 
         return webClient.get()
-                .uri("/api/user/internal/users/exists/{id}", userId)
+                .uri("/api/internal/users/exists/{id}", userId)
                 .retrieve()
                 .onStatus(
                         status -> status.is4xxClientError(),
@@ -42,7 +42,7 @@ public class UserClient {
      public UserMinimalDTO getUserMinimal(Long userId) {
 
         return webClient.get()
-                .uri("/api/user/internal/users/{id}/minimal", userId)
+                .uri("/api/internal/users/{id}/minimal", userId)
                 .retrieve()
                 .onStatus(
                         status -> status.is4xxClientError(),
@@ -60,7 +60,7 @@ public class UserClient {
      public UserSnapshotDTO getUserSnapshot(Long userId) {
 
         return webClient.get()
-                .uri("/api/user/internal/users/{id}/snapshot", userId)
+                .uri("/api/internal/users/{id}/snapshot", userId)
                 .retrieve()
                 .onStatus(
                         status -> status.is4xxClientError(),
@@ -79,7 +79,7 @@ public class UserClient {
   // Add this to your UserClient.java
      public UserMinimalDTO findByEmail(String email) {
          return webClient.get()
-                 .uri("/api/user/internal/users/by-email?email={email}", email)
+                 .uri("/api/internal/users/by-email?email={email}", email)
                  .retrieve()
                  .bodyToMono(UserMinimalDTO.class)
                  .block();

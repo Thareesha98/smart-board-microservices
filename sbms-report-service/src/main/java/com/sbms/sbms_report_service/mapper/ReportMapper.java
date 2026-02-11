@@ -33,7 +33,7 @@ public class ReportMapper {
             dto.setDate(r.getSubmissionDate().format(DATE_FMT));
         }
 
-        dto.setProperty(r.getBoardingName());
+        dto.setBoardingId(r.getBoardingId());
         dto.setAdminResponse(r.getResolutionDetails());
         dto.setActionTaken(r.getActionTaken());
         dto.setActionDuration(r.getActionDuration());
@@ -70,8 +70,8 @@ public class ReportMapper {
         r.setReportedUserId(dto.getReportedUserId());
         
         // Mapping 'boarding' string from DTO to 'boardingName' in Entity
-        r.setBoardingName(dto.getBoarding()); 
-        
+
+        r.setBoardingId(dto.getBoardingId());
         r.setIncidentDate(dto.getIncidentDate());
         r.setSubmissionDate(LocalDateTime.now());
         r.setAllowContact(Boolean.TRUE.equals(dto.getAllowContact()));

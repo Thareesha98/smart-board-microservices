@@ -70,10 +70,7 @@ public class Report extends BaseEntity {
     @Column(name = "reported_user_id")
     private Long reportedUserId;
 
-    /**
-     * Boarding involved in the report
-     */
-    
+
 
     /**
      * Denormalized display field ONLY (optional)

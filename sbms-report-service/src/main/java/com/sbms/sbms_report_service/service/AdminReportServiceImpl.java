@@ -66,7 +66,6 @@ public class AdminReportServiceImpl implements AdminReportService {
         reportRepository.save(report);
     }
 
-    // Helper method to talk to User Service
     private void enrichWithUserNames(AdminReportResponseDTO dto, Report report) {
         if (report.getReporterId() != null) {
             UserMinimalDTO sender = userClient.getUserMinimal(report.getReporterId());

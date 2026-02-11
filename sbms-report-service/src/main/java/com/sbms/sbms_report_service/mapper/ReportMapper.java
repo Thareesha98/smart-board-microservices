@@ -16,10 +16,7 @@ public class ReportMapper {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    // ======================
-    // ENTITY → RESPONSE
-    // ======================
-    public static ReportResponseDTO toDTO(Report r) {
+   public static ReportResponseDTO toDTO(Report r) {
         ReportResponseDTO dto = new ReportResponseDTO();
 
         dto.setId(r.getId());

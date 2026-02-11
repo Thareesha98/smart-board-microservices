@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/boardings/admin")
+@RequestMapping("/api/admin/boardings")
 @CrossOrigin
 @Tag(
     name = "Admin Boardings",

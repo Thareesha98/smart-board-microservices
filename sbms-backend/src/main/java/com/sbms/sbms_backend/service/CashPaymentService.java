@@ -40,10 +40,13 @@ public class CashPaymentService {
             return;
         }
         
-        MonthlyBill bill = billRepo.findById(intent.getMonthlyBillId())
-        .orElseThrow(() -> new RuntimeException("Payment intent not found"));
-        
-        bill.setStatus(MonthlyBillStatus.PENDING);
+        if (intent.getMonthlyBillId() != null) {
+            MonthlyBill bill = billRepo.findById(intent.getMonthlyBillId())
+                    .orElseThrow(() -> new RuntimeException("Monthly bill not found"));
+
+            bill.setStatus(MonthlyBillStatus.PENDING);
+            billRepo.save(bill);
+        }
         
 
         //  MARK AS SUBMITTED (NOT CONFIRMED)

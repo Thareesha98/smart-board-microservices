@@ -13,7 +13,7 @@ public class ReportCreateDTO {
     private String reportDescription;
     private String type;
     private String severity;
-    private String boarding;             // Name of the boarding
+    private Long boardingId;             // Name of the boarding
 
     private Long senderId;         // The Owner/Student ID
     private Long reportedUserId;   // (Optional) The Student ID being reported

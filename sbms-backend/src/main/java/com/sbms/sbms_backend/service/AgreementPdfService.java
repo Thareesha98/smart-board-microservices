@@ -123,11 +123,20 @@ public class AgreementPdfService {
             // ================= QR + FOOTER =================
             Table footer = new Table(new float[]{1, 1}).useAllAvailableWidth();
 
+  
+            
+            
+            
             footer.addCell(new Cell()
-                    .add(new Paragraph("Agreement Hash: " + r.getAgreementHash() != null ? r.getAgreementHash() : "Pending")
-                            .setFontSize(8))
-                    .setBorder(Border.NO_BORDER)
-                    .setVerticalAlignment(VerticalAlignment.MIDDLE));
+            	    .add(new Paragraph(
+            	            "Agreement Hash: " +
+            	            (r.getAgreementHash() != null ? r.getAgreementHash() : "Pending")
+            	    ).setFontSize(8))
+            	    .setBorder(Border.NO_BORDER)
+            	    .setVerticalAlignment(VerticalAlignment.MIDDLE));
+
+            
+            
 
             footer.addCell(new Cell()
                     .add(generateQrCode(r, pdf))

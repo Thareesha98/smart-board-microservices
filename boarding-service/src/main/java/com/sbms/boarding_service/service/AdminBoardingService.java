@@ -1,30 +1,34 @@
 package com.sbms.boarding_service.service;
 
-
 import com.sbms.boarding_service.dto.boarding.OwnerBoardingResponseDTO;
+import com.sbms.boarding_service.event.BoardingEventPublisher;
 import com.sbms.boarding_service.mapper.BoardingMapper;
 import com.sbms.boarding_service.model.Boarding;
 import com.sbms.boarding_service.model.enums.Status;
 import com.sbms.boarding_service.repository.BoardingRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class AdminBoardingService {
 
     private final BoardingRepository boardingRepository;
+    private final BoardingEventPublisher eventPublisher;
 
-    public AdminBoardingService(BoardingRepository boardingRepository) {
+    public AdminBoardingService(BoardingRepository boardingRepository,
+                                BoardingEventPublisher eventPublisher) {
         this.boardingRepository = boardingRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     // ----------------------------------------------------
     // VIEW ALL BOARDINGS (ANY STATUS)
     // ----------------------------------------------------
     public List<OwnerBoardingResponseDTO> getAllBoardings() {
-
         return boardingRepository.findAll().stream()
                 .map(BoardingMapper::toOwnerResponse)
                 .collect(Collectors.toList());
@@ -36,12 +40,13 @@ public class AdminBoardingService {
     public OwnerBoardingResponseDTO approve(Long boardingId) {
 
         Boarding boarding = getBoarding(boardingId);
-
         boarding.setStatus(Status.APPROVED);
 
-        return BoardingMapper.toOwnerResponse(
-                boardingRepository.save(boarding)
-        );
+        Boarding saved = boardingRepository.save(boarding);
+
+        publishEvent("boarding.approved", saved);
+
+        return BoardingMapper.toOwnerResponse(saved);
     }
 
     // ----------------------------------------------------
@@ -50,12 +55,13 @@ public class AdminBoardingService {
     public OwnerBoardingResponseDTO reject(Long boardingId) {
 
         Boarding boarding = getBoarding(boardingId);
-
         boarding.setStatus(Status.REJECTED);
 
-        return BoardingMapper.toOwnerResponse(
-                boardingRepository.save(boarding)
-        );
+        Boarding saved = boardingRepository.save(boarding);
+
+        publishEvent("boarding.rejected", saved);
+
+        return BoardingMapper.toOwnerResponse(saved);
     }
 
     // ----------------------------------------------------
@@ -64,11 +70,31 @@ public class AdminBoardingService {
     public OwnerBoardingResponseDTO deactivate(Long boardingId) {
 
         Boarding boarding = getBoarding(boardingId);
-
         boarding.setStatus(Status.INACTIVE);
 
-        return BoardingMapper.toOwnerResponse(
-                boardingRepository.save(boarding)
+        Boarding saved = boardingRepository.save(boarding);
+
+        publishEvent("boarding.deactivated", saved);
+
+        return BoardingMapper.toOwnerResponse(saved);
+    }
+
+    // ----------------------------------------------------
+    // EVENT PUBLISHING (CENTRALIZED)
+    // ----------------------------------------------------
+    private void publishEvent(String eventType, Boarding boarding) {
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("boardingId", boarding.getId());
+        data.put("status", boarding.getStatus().name());
+        data.put("title", boarding.getTitle());
+        data.put("ownerId", boarding.getOwnerId());
+
+        eventPublisher.publish(
+                eventType,
+                boarding.getOwnerId(),     // target user (owner)
+                boarding.getId(),
+                data
         );
     }
 
@@ -76,7 +102,6 @@ public class AdminBoardingService {
     // INTERNAL HELPER
     // ----------------------------------------------------
     private Boarding getBoarding(Long boardingId) {
-
         return boardingRepository.findById(boardingId)
                 .orElseThrow(() ->
                         new RuntimeException(

@@ -26,6 +26,11 @@ public class ReportService {
     // =========================
     public ReportResponseDTO createReport(Long reporterId, ReportCreateDTO dto) {
         
+    	if (dto.getBoardingId() == null) {
+    	    throw new RuntimeException("Boarding ID is required");
+    	}
+
+    	
         // 1. Handle file uploads first
         List<String> evidenceUrls = null;
         if (dto.getEvidence() != null && !dto.getEvidence().isEmpty()) {

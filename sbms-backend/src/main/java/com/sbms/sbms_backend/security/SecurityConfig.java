@@ -22,13 +22,16 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import org.springframework.web.cors.*;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.List;
 
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-   
+	private final GatewayHeaderAuthenticationFilter gatewayHeaderAuthenticationFilter;
 
     // ---------------------------------------------------------
     // Security Filter Chain
@@ -36,12 +39,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(sm ->
-                    sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
+    	http
+        // No JWT / No sessions
+        .csrf(csrf -> csrf.disable())
+        .httpBasic(basic -> basic.disable())
+        .formLogin(form -> form.disable())
+        .logout(logout -> logout.disable())
+
+        .sessionManagement(sm ->
+            sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        )
+
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+        // 🔥 REGISTER GATEWAY HEADER FILTER
+        .addFilterBefore(
+            gatewayHeaderAuthenticationFilter,
+            UsernamePasswordAuthenticationFilter.class
+        )
+            
+            
+            
             .authorizeHttpRequests(auth -> auth
             		
             		 .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -52,6 +70,10 @@ public class SecurityConfig {
                       //  "/api/appointments/**" ,
                         "/api/boardings",
                         "/api/boardings/**",
+                        
+                        "/api/maintenance/**" ,
+                        
+                        "/api/files/**", 
                         
                         "/ws/**",
 

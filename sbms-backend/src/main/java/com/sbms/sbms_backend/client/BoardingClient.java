@@ -14,7 +14,7 @@ import java.util.List;
 public class BoardingClient {
 
     private static final String BOARDING_SERVICE_BASE =
-            "http://boarding-service/api/boardings";
+            "http://boarding-service:8080/api/boardings";
 
     private final RestTemplate restTemplate;
 

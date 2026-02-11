@@ -17,7 +17,7 @@ public class ReportResponseDTO {
     private String date;
 
     // Context
-    private String property;      // Boarding Name
+    private Long boardingId;      
     private String student;
 
     // Admin Actions

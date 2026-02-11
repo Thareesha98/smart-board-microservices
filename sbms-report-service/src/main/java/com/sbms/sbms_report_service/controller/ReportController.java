@@ -21,15 +21,16 @@ public class ReportController {
     // ======================
     // 1. CREATE REPORT
     // =========================
-    @PostMapping
+    @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<ReportResponseDTO> createReport(
             @RequestHeader("X-User-Id") Long reporterId,
-            @RequestBody ReportCreateDTO dto
+            @ModelAttribute ReportCreateDTO dto
     ) {
         return ResponseEntity.ok(
                 reportService.createReport(reporterId, dto)
         );
     }
+
 
     // =========================
     // 2. MY SENT REPORTS

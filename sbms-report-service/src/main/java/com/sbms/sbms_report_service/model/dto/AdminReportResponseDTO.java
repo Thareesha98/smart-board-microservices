@@ -27,7 +27,7 @@ public class AdminReportResponseDTO {
     private LocalDateTime submissionDate;
     private LocalDate incidentDate;
 
-    private String boardingName;
+    private Long boardingId;
 
     private Long senderId;
     private String senderName;

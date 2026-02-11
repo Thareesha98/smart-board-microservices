@@ -2,12 +2,12 @@ package com.sbms.sbms_maintenance_service.service;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.sbms.sbms_maintenance_service.client.BoardingClient;
-import com.sbms.sbms_maintenance_service.dto.maintenance.MaintenanceCreateDTO;
-import com.sbms.sbms_maintenance_service.dto.maintenance.MaintenanceDecisionDTO;
-import com.sbms.sbms_maintenance_service.dto.maintenance.MaintenanceResponseDTO;
+import com.sbms.sbms_maintenance_service.dto.maintenance.*;
 import com.sbms.sbms_maintenance_service.mapper.MaintenanceMapper;
 import com.sbms.sbms_maintenance_service.model.Maintenance;
 import com.sbms.sbms_maintenance_service.publisher.MaintenanceEventPublisher;
@@ -20,6 +20,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class MaintenanceService {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(MaintenanceService.class);
 
     private final MaintenanceRepository repo;
     private final BoardingClient boardingClient;
@@ -40,7 +43,13 @@ public class MaintenanceService {
         m.setImageUrls(dto.getImageUrls());
 
         repo.save(m);
-        publisher.created(m);
+
+        //  SAFE EVENT PUBLISH
+        try {
+            publisher.created(m);
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to publish maintenance.created", e);
+        }
 
         return MaintenanceMapper.toDTO(m);
     }
@@ -67,12 +76,13 @@ public class MaintenanceService {
             Long id,
             MaintenanceDecisionDTO dto
     ) {
-        Maintenance m = repo.findById(id).orElseThrow();
+        Maintenance m = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Maintenance request not found"));
 
-        Long realOwner =
+        BoardingOwnerInfo ownerInfo =
                 boardingClient.getBoardingOwner(m.getBoardingId());
 
-        if (!realOwner.equals(ownerId)) {
+        if (!ownerInfo.ownerId().equals(ownerId)) {
             throw new RuntimeException("Unauthorized");
         }
 
@@ -80,7 +90,13 @@ public class MaintenanceService {
         m.setOwnerNote(dto.getOwnerNote());
 
         repo.save(m);
-        publisher.updated(m);
+
+        // SAFE EVENT PUBLISH
+        try {
+            publisher.updated(m);
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to publish maintenance.updated", e);
+        }
 
         return MaintenanceMapper.toDTO(m);
     }

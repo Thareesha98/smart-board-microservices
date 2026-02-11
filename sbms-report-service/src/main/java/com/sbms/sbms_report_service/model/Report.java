@@ -73,15 +73,14 @@ public class Report extends BaseEntity {
     /**
      * Boarding involved in the report
      */
-    @Column(name = "reported_boarding_id")
-    private Long reportedBoardingId;
+    
 
     /**
      * Denormalized display field ONLY (optional)
      * Not authoritative
      */
-    @Column(name = "boarding_name")
-    private String boardingName;
+    @Column(name = "boarding_id")
+    private Long boardingId;
 
     @Column(name = "allow_contact")
     private boolean allowContact;

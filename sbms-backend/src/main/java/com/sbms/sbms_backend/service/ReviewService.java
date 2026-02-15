@@ -21,7 +21,6 @@ public class ReviewService {
 
         @Transactional
         public ReviewResponseDTO saveReview(ReviewCreateDTO dto) {
-
             // 1. Prevent duplicate reviews using the ID from the DTO
             if (reviewRepository.existsByStudentIdAndBoardingId(dto.getStudentId(), dto.getBoardingId())) {
                 throw new IllegalStateException("You have already reviewed this boarding house.");

@@ -25,9 +25,6 @@ public class RegistrationController {
     @Autowired
     private UserClient userClient;
 
-
-    // ================= STUDENT =================
-
     @PostMapping("/student/{studentId}")
     @PreAuthorize("hasRole('STUDENT')")
     public RegistrationResponseDTO register(

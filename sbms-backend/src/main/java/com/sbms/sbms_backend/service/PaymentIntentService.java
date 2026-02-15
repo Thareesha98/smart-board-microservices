@@ -27,13 +27,7 @@ public class PaymentIntentService {
         return "PI-" + System.currentTimeMillis();
     }
 
-
-    /**
-     * Create a new payment intent with lifecycle state
-     * 
-     * 
-     */
-    public PaymentIntent create(CreatePaymentIntentDTO dto) {
+  public PaymentIntent create(CreatePaymentIntentDTO dto) {
 
         PaymentIntent intent = new PaymentIntent();
 
@@ -64,7 +58,6 @@ public class PaymentIntentService {
     }
 
 
-    // -------------------- EXPIRY RULES --------------------
 
     private LocalDateTime calculateExpiry(CreatePaymentIntentDTO dto) {
 

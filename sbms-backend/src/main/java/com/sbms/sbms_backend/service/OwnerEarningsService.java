@@ -54,6 +54,7 @@ public class OwnerEarningsService {
                 .toList();
     }
 
+    
     private OwnerEarningTransactionDTO map(OwnerWalletTransaction tx) {
 
         OwnerEarningTransactionDTO dto = new OwnerEarningTransactionDTO();

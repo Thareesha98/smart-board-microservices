@@ -67,7 +67,6 @@ public class UtilityBillService {
             }
 
             // 2. Fetch Utility bills from local DB where boardingId is in the list
-            // FIX: Using findByBoardingIdIn instead of the impossible cross-service join
             return utilityRepo.findByBoardingIdIn(boardingIds)
                     .stream()
                     .map(this::map)

@@ -63,7 +63,6 @@ public class PaymentController {
         // 3. FORCE studentId from resolved data (prevents ID spoofing from frontend)
         dto.setStudentId(student.getId());
 
-        // 4. Delegate to service layer
         return ResponseEntity.ok(paymentIntentService.create(dto));
     }
 

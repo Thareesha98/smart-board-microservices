@@ -39,7 +39,6 @@ public class AgreementPdfService {
         this.s3Service = s3Service;
     }
 
- // Pass the external data (User and Boarding) into the method
     public AgreementPdfResult generateAndUploadAgreement(
             Registration r, 
             UserMinimalDTO student, 

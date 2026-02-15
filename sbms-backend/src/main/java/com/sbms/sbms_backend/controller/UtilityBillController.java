@@ -48,10 +48,7 @@ public class UtilityBillController {
         utilityService.createOrUpdate(dto);
     }
 
-    /**
-     * Helper to resolve ownerId from the authenticated email
-     */
-    private Long getOwnerIdFromAuth(Authentication auth) {
+     private Long getOwnerIdFromAuth(Authentication auth) {
         String email = auth.getName();
         UserMinimalDTO user = userClient.findByEmail(email);
         

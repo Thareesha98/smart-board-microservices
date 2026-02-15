@@ -50,10 +50,7 @@ public class PaymentService {
         if (intent.getStatus() == PaymentIntentStatus.SUCCESS)
             throw new RuntimeException("Payment already completed");
 
-        // ===============================
-        // PAYHERE → AUTO SUCCESS (MOCK)
-        // ===============================
-        if (method == PaymentMethod.CARD) {
+           if (method == PaymentMethod.CARD) {
 
             intent.setStatus(PaymentIntentStatus.SUCCESS);
             intent.setCompletedAt(LocalDateTime.now());

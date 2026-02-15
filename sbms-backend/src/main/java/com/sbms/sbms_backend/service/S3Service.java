@@ -112,5 +112,6 @@ public class S3Service {
         } catch (S3Exception e) {
             throw new RuntimeException("Failed to download file from S3: " + e.awsErrorDetails().errorMessage(), e);
         }
+        
     }
 }

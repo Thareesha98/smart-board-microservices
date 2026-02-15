@@ -21,7 +21,6 @@ public class OwnerEarningsController {
 
     private final OwnerEarningsService earningsService;
     
-    // FIX: Use UserClient instead of UserRepository
     private final UserClient userClient; 
 
     @GetMapping("/summary")

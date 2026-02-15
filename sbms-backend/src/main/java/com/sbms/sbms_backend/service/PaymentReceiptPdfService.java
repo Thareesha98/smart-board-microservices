@@ -22,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PaymentReceiptPdfService {
 
-    // FIX: Use Clients instead of Repositories
     private final UserClient userClient;
     private final BoardingClient boardingClient;
 

@@ -64,7 +64,6 @@ public class MonthlyBillService {
 
         for (UtilityBill utility : utilities) {
             
-            // Find the specific boarding price from our batch-fetched snapshots
             BoardingSnapshot boarding = snapshots.stream()
                     .filter(s -> s.id().equals(utility.getBoardingId()))
                     .findFirst()

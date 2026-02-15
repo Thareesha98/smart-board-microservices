@@ -35,7 +35,6 @@ public class NotificationPublisher {
                     .occurredAt(Instant.now())
                     .build();
 
-            // IMPORTANT: send the object itself (not a JSON string).
             rabbitTemplate.convertAndSend(exchangeName, eventType, event);
 
         } catch (Exception e) {

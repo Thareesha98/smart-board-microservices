@@ -37,7 +37,6 @@ public class BankSlipPaymentService {
         // Recommended: PaymentTransaction (later step)
         intent.setReferenceId(slipUrl);
 
-        // 3️ Mark as awaiting owner verification
         
         intent.setMethod(PaymentMethod.BANK_SLIP);
         intent.setReferenceId(slipUrl);

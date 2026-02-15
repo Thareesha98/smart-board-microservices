@@ -15,7 +15,6 @@ public class AgreementBlockchainService {
     @Autowired
     private AgreementBlockRepository blockRepo;
 
-    // ================= ADD BLOCK =================
 
     public void addAgreementBlock(Long regId, String agreementHash) {
 

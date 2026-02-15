@@ -92,7 +92,6 @@ public class OwnerPaymentApprovalController {
             );
         }
 
-        // 2️ Create immutable transaction record
         PaymentTransaction tx = new PaymentTransaction();
         tx.setIntent(intent);
         tx.setStatus(PaymentStatus.SUCCESS);

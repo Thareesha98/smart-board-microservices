@@ -29,11 +29,7 @@ public class MonthlyBillController {
     
     // FIX: Use UserClient instead of UserRepository
     private final UserClient userClient;
-
-    // ============================
-    // STUDENT: My Bills
-    // ============================
-    @GetMapping("/student")
+@GetMapping("/student")
     @PreAuthorize("hasRole('STUDENT')")
     public List<MonthlyBillResponseDTO> studentBills(Authentication authentication) {
         
@@ -43,10 +39,7 @@ public class MonthlyBillController {
         return billService.getForStudent(studentId);
     }
 
-    // ============================
-    // OWNER: Bills
-    // ============================
-    @GetMapping("/owner")
+       @GetMapping("/owner")
     @PreAuthorize("hasRole('OWNER')")
     public List<MonthlyBillResponseDTO> ownerBills(Authentication authentication) {
         
@@ -55,11 +48,7 @@ public class MonthlyBillController {
 
         return billService.getForOwner(ownerId);
     }
-
-    // ============================
-    // ADMIN / CRON
-    // ============================
-    @PostMapping("/generate/{month}")
+  @PostMapping("/generate/{month}")
     public ResponseEntity<String> generate(@PathVariable String month) {
         billService.generateBillsForMonth(month);
         return ResponseEntity.ok("Monthly bills generated for " + month);

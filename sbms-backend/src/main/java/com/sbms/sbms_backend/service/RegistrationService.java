@@ -242,7 +242,6 @@ public class RegistrationService {
     @Autowired
     private ReviewRepository reviewRepo;
 
-    // ================= STUDENT REGISTER =================
 
     @Transactional
     public RegistrationResponseDTO register(Long studentId, RegistrationRequestDTO dto) {

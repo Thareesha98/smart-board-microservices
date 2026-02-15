@@ -49,7 +49,6 @@ public class CashPaymentService {
         }
         
 
-        //  MARK AS SUBMITTED (NOT CONFIRMED)
         intent.setStatus(PaymentIntentStatus.AWAITING_MANUAL_APPROVAL);
         intent.setManualApprovalStatus(ManualApprovalStatus.PENDING);
         intent.setCompletedAt(LocalDateTime.now());

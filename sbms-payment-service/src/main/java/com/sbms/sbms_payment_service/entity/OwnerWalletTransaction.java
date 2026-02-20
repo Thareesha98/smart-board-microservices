@@ -1,45 +1,31 @@
 package com.sbms.sbms_payment_service.entity;
 
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-
 @Entity
-@Table(
-    name = "owner_wallet_transactions",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_owner_wallet_reference",
-            columnNames = {"ownerId", "reference"}
-        )
-    }
-)
 @Getter
 @Setter
+@Table(name = "owner_wallet_transactions")
 public class OwnerWalletTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private Long ownerId;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(precision = 14, scale = 2, nullable = false)
     private BigDecimal amount;
 
-    @Column(nullable = false, length = 100)
-    private String reference; // paymentId
+    private String reference; // payment transactionRef
 
-    @Column(nullable = false)
-    private OffsetDateTime createdAt;
+    private String type; // CREDIT / DEBIT
 
-    @PrePersist
-    void onCreate() {
-        this.createdAt = OffsetDateTime.now();
-    }
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

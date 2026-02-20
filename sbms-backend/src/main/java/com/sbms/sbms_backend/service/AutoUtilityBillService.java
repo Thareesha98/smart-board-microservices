@@ -24,7 +24,6 @@ public class AutoUtilityBillService {
     @Transactional
     public void generateForMonth(String month) {
         // 1. Get all unique Boarding IDs that already have bills or exist in your system
-        // Since we can't 'findAll' from remote, we fetch snapshots for IDs we know about
         List<Long> knownBoardingIds = utilityRepo.findAllDistinctBoardingIds();
 
         if (knownBoardingIds.isEmpty()) return;

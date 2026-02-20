@@ -24,7 +24,7 @@ public class PaymentEventPublisher {
         rabbitTemplate.convertAndSend(
                 "payment.exchange",
                 "payment.succeeded",
-                event.paymentId()   // IDENTITY ONLY
+                event.getEventId()   // IDENTITY ONLY
         );
     }
 

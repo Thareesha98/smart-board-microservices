@@ -1,18 +1,13 @@
 package com.sbms.sbms_payment_service.service;
-
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import com.itextpdf.text.pdf.draw.LineSeparator;
-
 import com.sbms.sbms_payment_service.client.BoardingClient;
 import com.sbms.sbms_payment_service.client.UserClient;
-import com.sbms.sbms_payment_service.dto.BoardingInfo;
-import com.sbms.sbms_payment_service.dto.UserBasicInfo;
-import com.sbms.sbms_payment_service.entity.Payment;
-import com.sbms.sbms_payment_service.entity.PaymentIntent;
-import com.sbms.sbms_payment_service.repository.PaymentIntentRepository;
+import com.sbms.sbms_payment_service.dto.user.UserMinimalDTO;
+import com.sbms.sbms_payment_service.entity.BoardingSnapshot;
+import com.sbms.sbms_payment_service.entity.PaymentTransaction;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -20,43 +15,41 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
 
+import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class PaymentReceiptPdfService {
 
-    private final PaymentIntentRepository intentRepository;
     private final UserClient userClient;
     private final BoardingClient boardingClient;
 
-    public byte[] generate(Payment payment) {
+    public byte[] generate(PaymentTransaction tx) {
 
         try {
-            // ---------------- LOAD PAYMENT INTENT ----------------
-
-            PaymentIntent intent = intentRepository
-                    .findById(payment.getPaymentIntentId())
-                    .orElseThrow(() ->
-                            new IllegalStateException("PaymentIntent not found")
-                    );
-
-            // ---------------- FETCH REMOTE DATA ----------------
-
-            UserBasicInfo student =
-                    userClient.getUser(intent.getStudentId());
-
-            UserBasicInfo owner =
-                    userClient.getUser(intent.getOwnerId());
-
-            BoardingInfo boarding =
-                    boardingClient.getBoarding(intent.getBoardingId());
-
-            // ---------------- PDF GENERATION ----------------
-
             Document doc = new Document(PageSize.A4, 36, 36, 36, 36);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             PdfWriter.getInstance(doc, out);
             doc.open();
 
+            /* ---------- FETCH REAL DATA VIA CLIENTS ---------- */
+            
+            // Assuming tx.getIntent() returns the linked Intent record
+            Long studentId = tx.getIntent().getStudentId();
+            Long ownerId   = tx.getIntent().getOwnerId();
+            Long boardingId = tx.getIntent().getBoardingId();
+
+            // Fetch from User Service
+            UserMinimalDTO student = userClient.getUserMinimal(studentId);
+            UserMinimalDTO owner   = userClient.getUserMinimal(ownerId);
+            
+            // Fetch from Boarding Service
+            BoardingSnapshot boarding = boardingClient.getBoarding(boardingId);
+
+            String studentName = student != null ? student.getFullName() : "N/A";
+            String ownerName   = owner != null ? owner.getFullName() : "N/A";
+            String boardingTitle = boarding != null ? boarding.title() : "N/A"; // record accessor
+
+            /* ---------- COLORS & FONTS (Unchanged) ---------- */
             BaseColor PRIMARY = new BaseColor(37, 99, 235);
             BaseColor DARK = new BaseColor(15, 23, 42);
             BaseColor GRAY = new BaseColor(100, 116, 139);
@@ -69,84 +62,76 @@ public class PaymentReceiptPdfService {
             Font value = FontFactory.getFont(FontFactory.HELVETICA, 11, DARK);
             Font success = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, SUCCESS);
 
-            // -------- HEADER --------
-
+            /* ---------- HEADER ---------- */
             doc.add(new Paragraph("SMART BOARD", brand));
             doc.add(new Paragraph("Live Smarter. Manage Better.", slogan));
             doc.add(Chunk.NEWLINE);
 
+            /* ---------- PAID SEAL ---------- */
             try {
-                InputStream sealStream =
-                        new ClassPathResource("pdf/paid-seal.png").getInputStream();
+                InputStream sealStream = new ClassPathResource("pdf/paid-seal.png").getInputStream();
                 Image seal = Image.getInstance(sealStream.readAllBytes());
                 seal.scaleAbsolute(120, 120);
                 seal.setAbsolutePosition(420, 700);
                 doc.add(seal);
             } catch (Exception ignored) {}
 
+            /* ---------- TITLE ---------- */
             doc.add(new Paragraph("PAYMENT RECEIPT", section));
             doc.add(new LineSeparator());
             doc.add(Chunk.NEWLINE);
 
-            // -------- META --------
-
+            /* ---------- META TABLE ---------- */
             PdfPTable meta = new PdfPTable(2);
             meta.setWidthPercentage(100);
 
-            addRow(meta, "Receipt No",
-                    payment.getGatewayReference(), label, value);
-
+            addRow(meta, "Receipt No", tx.getTransactionRef(), label, value);
             addRow(meta, "Date",
-                    payment.getCompletedAt()
-                            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                    tx.getPaidAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
                     label, value);
-
-            addRow(meta, "Payment Method",
-                    payment.getGateway(), label, value);
-
+            addRow(meta, "Payment Method", tx.getMethod().name(), label, value);
             addRow(meta, "Status", "PAID", label, success);
 
             doc.add(meta);
             doc.add(Chunk.NEWLINE);
 
-            // -------- PARTIES --------
-
+            /* ---------- PARTIES ---------- */
             PdfPTable parties = new PdfPTable(2);
             parties.setWidthPercentage(100);
 
-            addBlock(parties, "STUDENT",
-                    student != null ? student.fullName() : "N/A");
-
-            addBlock(parties, "OWNER",
-                    owner != null ? owner.fullName() : "N/A");
+            addBlock(parties, "STUDENT", studentName);
+            addBlock(parties, "OWNER", ownerName);
 
             doc.add(parties);
             doc.add(Chunk.NEWLINE);
 
-            // -------- BOARDING --------
-
-            doc.add(new Paragraph(
-                    "Boarding: " +
-                    (boarding != null ? boarding.title() : "N/A"),
-                    value
-            ));
+            /* ---------- BOARDING ---------- */
+            doc.add(new Paragraph("Boarding: " + boardingTitle, value));
             doc.add(Chunk.NEWLINE);
 
-            // -------- AMOUNTS --------
-
+            /* ---------- AMOUNTS ---------- */
             PdfPTable amounts = new PdfPTable(2);
             amounts.setWidthPercentage(100);
 
-            addMoney(amounts, "Gross Amount", payment.getAmount());
+            addMoney(amounts, "Gross Amount", tx.getAmount());
+            addMoney(amounts, "Platform Fee (2%)", tx.getPlatformFee());
+            addMoney(amounts, "Gateway Fee (1%)", tx.getGatewayFee());
 
-            // Fees can be calculated or fetched later
-            addMoney(amounts, "Platform Fee (2%)", "—");
-            addMoney(amounts, "Gateway Fee", "—");
+            PdfPCell netLabel = new PdfPCell(new Phrase("Net Amount to Owner", label));
+            netLabel.setPadding(8);
+            netLabel.setBorder(Rectangle.TOP);
+            amounts.addCell(netLabel);
+
+            PdfPCell netValue = new PdfPCell(
+                    new Phrase("LKR " + tx.getNetAmount(), success));
+            netValue.setPadding(8);
+            netValue.setBorder(Rectangle.TOP);
+            netValue.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            amounts.addCell(netValue);
 
             doc.add(amounts);
 
-            // -------- FOOTER --------
-
+            /* ---------- FOOTER ---------- */
             doc.add(Chunk.NEWLINE);
             doc.add(new LineSeparator());
             doc.add(new Paragraph(
@@ -162,7 +147,6 @@ public class PaymentReceiptPdfService {
             throw new RuntimeException("PDF generation failed", e);
         }
     }
-
     /* ---------- HELPERS ---------- */
 
     private void addRow(PdfPTable t, String l, String v, Font lf, Font vf) {

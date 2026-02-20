@@ -72,7 +72,6 @@ public class RegistrationController {
         return registrationService.decide(ownerId, regId, dto);
     }
 
-    // ================= DASHBOARD =================
 
     @GetMapping("/{regId}/dashboard")
     @PreAuthorize("hasRole('STUDENT')")

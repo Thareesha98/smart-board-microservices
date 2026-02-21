@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: chatbot-service
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+ml:
+  intent:
+    base-url: http://ml-intent-service:8000

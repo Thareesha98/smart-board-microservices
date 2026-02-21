@@ -86,6 +86,11 @@ public class NotificationEventListener {
             case "maintenance.updated" -> "Maintenance updated";
             case "maintenance.completed" -> "Maintenance completed";
             case "maintenance.rejected" -> "Maintenance rejected";
+            
+            
+            case "payment.succeeded" -> "Payment Successful";
+            case "payment.pending_approval" -> "Payment Submitted";
+            case "payment.failed" -> "Payment Failed";
 
             
             default -> "Notification";
@@ -93,7 +98,24 @@ public class NotificationEventListener {
     }
 
     private String buildMessage(String eventType, Map<String, Object> data) {
-        return eventType + " — " + (data != null ? data.toString() : "");
+
+        if (eventType == null) return "New notification";
+
+        return switch (eventType.toLowerCase()) {
+
+            case "payment.succeeded" ->
+                    "Your payment of LKR " + data.getOrDefault("amount", "0")
+                            + " was completed successfully.";
+
+            case "payment.pending_approval" ->
+                    "Your payment has been submitted and is awaiting owner approval.";
+
+            case "payment.failed" ->
+                    "Your payment has failed. Please try again.";
+
+            default ->
+                    eventType + " — " + (data != null ? data.toString() : "");
+        };
     }
 
     private NotificationType mapType(String eventType) {

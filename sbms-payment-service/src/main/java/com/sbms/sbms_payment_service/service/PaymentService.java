@@ -1,11 +1,11 @@
 package com.sbms.sbms_payment_service.service;
 
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+
 import com.sbms.sbms_notification_service.model.enums.PaymentIntentStatus;
 import com.sbms.sbms_notification_service.model.enums.PaymentMethod;
 import com.sbms.sbms_notification_service.model.enums.PaymentStatus;
@@ -29,39 +29,33 @@ public class PaymentService {
 
     private final PaymentIntentRepository intentRepo;
     private final PaymentTransactionRepository txRepo;
-    
     private final PaymentReceiptPdfService receiptPdfService;
     private final OwnerWalletService ownerWalletService;
-    
     private final S3Service s3Service;
-    
     private final PaymentEventPublisher eventPublisher;
-    
     private final PaymentGateway paymentGateway;
 
-
-    
-    
-    
-    
-    
     @Transactional
     public PaymentResult pay(Long intentId, PaymentMethod method) {
 
         PaymentIntent intent = intentRepo.findById(intentId)
                 .orElseThrow(() -> new RuntimeException("Payment intent not found"));
 
-        // Idempotency check (CRITICAL)
+        // 🔒 IDEMPOTENCY (CRITICAL FOR FINANCIAL SYSTEMS)
         if (intent.getStatus() == PaymentIntentStatus.SUCCESS) {
             log.warn("Duplicate payment attempt for intent {}", intentId);
             throw new RuntimeException("Payment already completed");
         }
 
+        // ===================== CARD PAYMENT (SYNC SUCCESS) =====================
         if (method == PaymentMethod.CARD) {
 
-            // 1️⃣ Update Intent (LOCAL DB ONLY)
+            log.info("Processing CARD payment for intent {}", intentId);
+
+            // 1️⃣ Mark intent success (LOCAL TRANSACTION)
             intent.setStatus(PaymentIntentStatus.SUCCESS);
             intent.setCompletedAt(LocalDateTime.now());
+            intent.setMethod(method);
             intentRepo.save(intent);
 
             // 2️⃣ Create Transaction
@@ -77,7 +71,6 @@ public class PaymentService {
 
             BigDecimal platformFee = intent.getAmount()
                     .multiply(new BigDecimal("0.02"));
-
             BigDecimal gatewayFee = intent.getAmount()
                     .multiply(new BigDecimal("0.01"));
 
@@ -86,50 +79,71 @@ public class PaymentService {
 
             BigDecimal netAmount =
                     intent.getAmount().subtract(platformFee).subtract(gatewayFee);
-
             tx.setNetAmount(netAmount);
+
             txRepo.save(tx);
 
-            // 3️⃣ Credit Wallet (Still in Payment Domain = OK)
+            // 3️⃣ CREDIT WALLET (FINANCIAL ORDER IMPORTANT)
             ownerWalletService.credit(
                     intent.getOwnerId(),
                     netAmount,
                     tx.getTransactionRef()
             );
 
-            // 4️⃣ PUBLISH DOMAIN EVENT (Instead of updating MonthlyBill)
-            PaymentSucceededEvent event = new PaymentSucceededEvent();
-            event.setIntentId(intent.getId());
-            event.setTransactionId(tx.getId());
-            event.setStudentId(intent.getStudentId());
-            event.setOwnerId(intent.getOwnerId());
-            event.setMonthlyBillId(intent.getMonthlyBillId());
-            event.setAmount(tx.getAmount());
-            event.setMethod(method.name());
-            event.setTransactionRef(tx.getTransactionRef());
+            // 🔥 4️⃣ GENERATE RECEIPT (FIXED - WAS MISSING)
+            String receiptUrl = generateAndUploadReceipt(tx);
+            tx.setReceiptPath(receiptUrl);
+            txRepo.save(tx);
 
-            eventPublisher.publishPaymentSucceeded(event);
+            // 5️⃣ PUBLISH EVENT (ASYNC BILLING + NOTIFICATIONS)
+            publishPaymentSucceededEvent(intent, tx);
 
-            // 5️⃣ Return response (FAST API, async processing)
             return new PaymentResult(
                     tx.getId(),
                     tx.getTransactionRef(),
                     intent.getAmount().doubleValue(),
                     "SUCCESS",
-                    null // receipt now async
+                    receiptUrl // FIXED: return receipt to frontend
             );
         }
 
-        // Gateway async flow (unchanged)
+        // ===================== EXTERNAL GATEWAY FLOW =====================
+        log.info("Processing gateway payment for intent {}", intentId);
+
         intent.setStatus(PaymentIntentStatus.PROCESSING);
         intentRepo.save(intent);
 
-        GatewayChargeResult gateway =
-                paymentGateway.charge(intent, method);
+		
+		GatewayChargeResult gatewayResult;
+		
+		try {
+		    gatewayResult = paymentGateway.charge(intent, method);
+		} catch (Exception ex) {
+		    //  CRITICAL: Never leave payment in PROCESSING state
+		    log.error("Gateway exception for intent {}. Marking as FAILED", intentId, ex);
+		
+		    intent.setStatus(PaymentIntentStatus.FAILED);
+		    intent.setCompletedAt(LocalDateTime.now());
+		    intentRepo.save(intent);
+		
+		    throw new RuntimeException("Payment gateway timeout or failure. Please try again.");
+		}
+		
+		// Handle fallback or failure response
+		if (gatewayResult == null || !gatewayResult.isSuccess()) {
+		
+		    log.warn("Gateway returned failure for intent {}", intentId);
+		
+		    intent.setStatus(PaymentIntentStatus.FAILED);
+		    intent.setCompletedAt(LocalDateTime.now());
+		    intentRepo.save(intent);
+		
+		    throw new RuntimeException("Payment gateway failed");
+		}
 
         PaymentTransaction tx = new PaymentTransaction();
         tx.setIntent(intent);
-        tx.setTransactionRef(gateway.getGatewayRef());
+        tx.setTransactionRef(gatewayResult.getGatewayRef());
         tx.setAmount(intent.getAmount());
         tx.setMethod(method);
         tx.setGateway("PAYHERE");
@@ -146,16 +160,41 @@ public class PaymentService {
         );
     }
 
-    
-    
-    
-    
-    
-    
+    // ===================== HELPER: RECEIPT GENERATION =====================
+    private String generateAndUploadReceipt(PaymentTransaction tx) {
+        try {
+            byte[] pdfBytes = receiptPdfService.generate(tx);
 
+            String receiptKey = "payment-receipts/receipt-" +
+                    tx.getTransactionRef() + ".pdf";
+
+            return s3Service.uploadBytes(
+                    pdfBytes,
+                    receiptKey,
+                    "application/pdf"
+            );
+        } catch (Exception ex) {
+            log.error("Receipt generation failed for tx {}", tx.getId(), ex);
+            return null; // Do NOT fail payment if receipt fails (best practice)
+        }
+    }
+
+    // ===================== HELPER: EVENT PUBLISH =====================
+    private void publishPaymentSucceededEvent(PaymentIntent intent, PaymentTransaction tx) {
+        PaymentSucceededEvent event = new PaymentSucceededEvent();
+        event.setIntentId(intent.getId());
+        event.setTransactionId(tx.getId());
+        event.setStudentId(intent.getStudentId());
+        event.setOwnerId(intent.getOwnerId());
+        event.setMonthlyBillId(intent.getMonthlyBillId());
+        event.setAmount(tx.getAmount());
+        event.setMethod(tx.getMethod().name());
+        event.setTransactionRef(tx.getTransactionRef());
+
+        eventPublisher.publishPaymentSucceeded(event);
+    }
 
     public List<PaymentHistoryDTO> history(Long userId) {
-
         return txRepo.findByIntentStudentId(userId)
                 .stream()
                 .map(tx -> {
@@ -172,4 +211,3 @@ public class PaymentService {
                 .toList();
     }
 }
-

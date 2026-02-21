@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: chatbot
+  datasource:
+    url: jdbc:postgresql://db.sbnonemtvocisgqouguu.supabase.co:5432/sbms_chatbot_db?sslmode=require
+    username: chatbot_user
+    password: chatbot09090909
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: public
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: never
+
+server:
+  port: 8089
+  
+ml:
+  intent:
+    base-url: http://ml-intent-service:8000

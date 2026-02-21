@@ -2,6 +2,63 @@ spring:
   application:
     name: sbms-payment-service
 
-services:
-  registration:
-    base-url: http://registration-service.sbms.svc.cluster.local
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        slidingWindowSize: 20
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        minimumNumberOfCalls: 10
+      boardingService:
+        slidingWindowSize: 20
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+      fileService:
+        slidingWindowSize: 20
+        failureRateThreshold: 40
+        waitDurationInOpenState: 20s
+      emailService:
+        slidingWindowSize: 10
+        failureRateThreshold: 60
+        waitDurationInOpenState: 15s
+  retry:
+    instances:
+      userService:
+        maxAttempts: 3
+        waitDuration: 500ms
+      fileService:
+        maxAttempts: 3
+        waitDuration: 1s
+      emailService:
+        maxAttempts: 2
+        waitDuration: 500ms
+  timelimiter:
+    instances:
+      userService:
+        timeoutDuration: 3s
+      boardingService:
+        timeoutDuration: 3s
+      fileService:
+        timeoutDuration: 10s

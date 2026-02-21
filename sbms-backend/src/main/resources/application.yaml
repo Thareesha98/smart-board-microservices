@@ -74,4 +74,13 @@ logging:
     org.springframework.security: DEBUG
     com.sbms: DEBUG
 
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+
 #url: jdbc:postgresql://smart-board-db.c7miuo2k4f6h.ap-south-1.rds.amazonaws.com:5432/smart-board

@@ -1,6 +1,23 @@
 server:
   port: 8085
 
+# --- New Management Section ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+# ------------------------------
+
 spring:
   application:
     name: sbms-notification-service
@@ -26,8 +43,6 @@ rabbitmq:
   exchange: sbms.events
   queue: sbms.notification.queue
   routing-key: "#"
-
-
 
 sbms:
   rabbitmq:

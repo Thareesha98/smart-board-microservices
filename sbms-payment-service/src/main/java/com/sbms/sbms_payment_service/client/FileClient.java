@@ -10,21 +10,27 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+import lombok.extern.slf4j.Slf4j;
+
+import java.time.Duration;
+
 @Service
+@Slf4j
 public class FileClient {
 
     private final WebClient webClient;
 
-    // Calls sbms-backend service inside Kubernetes
     public FileClient(WebClient.Builder builder) {
         this.webClient = builder
                 .baseUrl("http://sbms-backend:8080")
                 .build();
     }
 
-    /**
-     * Upload raw bytes as file (for PDF receipts)
-     */
+    @CircuitBreaker(name = "fileService", fallbackMethod = "fallbackUpload")
+    @Retry(name = "fileService")
     public String uploadBytes(byte[] bytes, String fileName, String folder) {
 
         MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
@@ -46,24 +52,11 @@ public class FileClient {
                 .retrieve()
                 .bodyToMono(String.class)
                 .timeout(Duration.ofSeconds(10))
-                .onErrorResume(ex -> {
-                    throw new RuntimeException("File upload failed: " + ex.getMessage());
-                })
                 .block();
     }
 
-    /**
-     * Delete file from S3 via sbms-backend
-     */
-    public void deleteFile(String fileUrl) {
-        webClient.delete()
-                .uri(uriBuilder ->
-                        uriBuilder.path("/api/files/delete")
-                                .queryParam("fileUrl", fileUrl)
-                                .build()
-                )
-                .retrieve()
-                .toBodilessEntity()
-                .block();
+    public String fallbackUpload(byte[] bytes, String fileName, String folder, Throwable ex) {
+        log.error("File upload failed for receipt {}. Returning null URL.", fileName, ex);
+        return null; // graceful fallback (payment still succeeds)
     }
 }

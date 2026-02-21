@@ -62,6 +62,12 @@ public class SecurityConfig {
             
             .authorizeHttpRequests(auth -> auth
             		
+            		
+            		.requestMatchers("/actuator/health/**").permitAll()
+                    .requestMatchers("/actuator/info").permitAll()
+                    .requestMatchers("/actuator/prometheus").permitAll()
+                    .requestMatchers("/actuator/**").permitAll()
+            		
             		 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                 .requestMatchers(

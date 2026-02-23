@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -20,10 +21,13 @@ public class EmailClient {
 
     private final WebClient webClient;
 
-    public EmailClient(WebClient emailServiceWebClient) {
-        this.webClient = emailServiceWebClient;
+   
+    public EmailClient(
+            @Qualifier("emailServiceWebClient") WebClient webClient
+    ) {
+        this.webClient = webClient;
     }
-
+    
     @Retry(name = "emailService", fallbackMethod = "fallbackEmail")
     public void sendPaymentReceipt(
             String email,

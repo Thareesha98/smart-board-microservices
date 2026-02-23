@@ -53,7 +53,6 @@ public class OwnerEarningsService {
                 .map(this::map)
                 .toList();
     }
-
     
     private OwnerEarningTransactionDTO map(OwnerWalletTransaction tx) {
 

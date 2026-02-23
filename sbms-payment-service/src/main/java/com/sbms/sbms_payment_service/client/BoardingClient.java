@@ -2,6 +2,7 @@ package com.sbms.sbms_payment_service.client;
 
 import java.time.Duration;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -17,8 +18,10 @@ public class BoardingClient {
 
     private final WebClient webClient;
 
-    public BoardingClient(WebClient boardingServiceWebClient) {
-        this.webClient = boardingServiceWebClient;
+    public BoardingClient(
+            @Qualifier("boardingServiceWebClient") WebClient webClient
+    ) {
+        this.webClient = webClient;
     }
 
     @CircuitBreaker(name = "boardingService", fallbackMethod = "fallbackBoarding")

@@ -63,7 +63,6 @@ public class PaymentIntentService {
         };
     }
 
-    // -------------------- VALIDATION --------------------
 
     private void validate(CreatePaymentIntentDTO dto) {
 

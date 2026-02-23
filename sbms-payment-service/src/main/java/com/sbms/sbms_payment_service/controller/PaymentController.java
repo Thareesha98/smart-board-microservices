@@ -45,41 +45,38 @@ public class PaymentController {
     private final UserClient userClient;
 
     // ===============================
-    // 1️⃣ CREATE PAYMENT INTENT (UNCHANGED FOR FRONTEND)
+    // 1 CREATE PAYMENT INTENT (UNCHANGED FOR FRONTEND)
     // ===============================
     @PostMapping("/intent")
     public ResponseEntity<PaymentIntent> createIntent(
             @RequestBody CreatePaymentIntentDTO dto,
-            Authentication authentication
+            @RequestHeader("X-User-Email") String email
     ) {
-        String email = authentication.getName();
-
         UserMinimalDTO student = userClient.findByEmail(email);
 
         if (student == null) {
             throw new RuntimeException("Student not found in User Service");
         }
 
-        // SECURITY: prevent spoofing
         dto.setStudentId(student.getId());
 
         return ResponseEntity.ok(paymentIntentService.create(dto));
     }
 
     // ===============================
-    // 2️⃣ CARD / ONLINE PAYMENT (UNCHANGED API)
     // ===============================
     @PostMapping("/pay/{intentId}")
-    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<PaymentResult> pay(
             @PathVariable Long intentId,
-            @RequestParam PaymentMethod method
+            @RequestParam PaymentMethod method,
+            @RequestHeader("X-User-Role") String role
     ) {
+        if (!"STUDENT".equals(role)) {
+            throw new RuntimeException("Forbidden");
+        }
+
         return ResponseEntity.ok(paymentService.pay(intentId, method));
     }
-
-    // ===============================
-    // 3️⃣ CASH PAYMENT (UNCHANGED RESPONSE)
     // ===============================
     @PostMapping("/cash/{intentId}")
     @PreAuthorize("hasRole('STUDENT')")
@@ -115,14 +112,10 @@ public class PaymentController {
     }
 
     // ===============================
-    // 5️⃣ PAYMENT HISTORY (UNCHANGED)
-    // ===============================
     @GetMapping("/history")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<List<PaymentHistoryDTO>> history(Authentication authentication) {
-
-        String email = authentication.getName();
-
+    public ResponseEntity<List<PaymentHistoryDTO>> history(
+            @RequestHeader("X-User-Email") String email
+    ) {
         UserMinimalDTO student = userClient.findByEmail(email);
 
         if (student == null) {

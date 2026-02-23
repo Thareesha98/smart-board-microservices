@@ -9,12 +9,14 @@ import org.springframework.stereotype.Service;
 import com.sbms.sbms_notification_service.model.enums.PaymentIntentStatus;
 import com.sbms.sbms_notification_service.model.enums.PaymentMethod;
 import com.sbms.sbms_notification_service.model.enums.PaymentStatus;
+import com.sbms.sbms_payment_service.client.FileClient;
 import com.sbms.sbms_payment_service.dto.GatewayChargeResult;
 import com.sbms.sbms_payment_service.dto.PaymentHistoryDTO;
 import com.sbms.sbms_payment_service.dto.PaymentResult;
 import com.sbms.sbms_payment_service.entity.PaymentIntent;
 import com.sbms.sbms_payment_service.entity.PaymentTransaction;
 import com.sbms.sbms_payment_service.events.PaymentSucceededEvent;
+import com.sbms.sbms_payment_service.publisher.PaymentEventPublisher;
 import com.sbms.sbms_payment_service.repository.PaymentIntentRepository;
 import com.sbms.sbms_payment_service.repository.PaymentTransactionRepository;
 
@@ -31,9 +33,9 @@ public class PaymentService {
     private final PaymentTransactionRepository txRepo;
     private final PaymentReceiptPdfService receiptPdfService;
     private final OwnerWalletService ownerWalletService;
-    private final S3Service s3Service;
     private final PaymentEventPublisher eventPublisher;
     private final PaymentGateway paymentGateway;
+    private final FileClient fileClient;
 
     @Transactional
     public PaymentResult pay(Long intentId, PaymentMethod method) {
@@ -41,7 +43,6 @@ public class PaymentService {
         PaymentIntent intent = intentRepo.findById(intentId)
                 .orElseThrow(() -> new RuntimeException("Payment intent not found"));
 
-        // 🔒 IDEMPOTENCY (CRITICAL FOR FINANCIAL SYSTEMS)
         if (intent.getStatus() == PaymentIntentStatus.SUCCESS) {
             log.warn("Duplicate payment attempt for intent {}", intentId);
             throw new RuntimeException("Payment already completed");
@@ -52,13 +53,11 @@ public class PaymentService {
 
             log.info("Processing CARD payment for intent {}", intentId);
 
-            // 1️⃣ Mark intent success (LOCAL TRANSACTION)
             intent.setStatus(PaymentIntentStatus.SUCCESS);
             intent.setCompletedAt(LocalDateTime.now());
             intent.setMethod(method);
             intentRepo.save(intent);
 
-            // 2️⃣ Create Transaction
             PaymentTransaction tx = new PaymentTransaction();
             tx.setIntent(intent);
             tx.setMethod(method);
@@ -83,19 +82,16 @@ public class PaymentService {
 
             txRepo.save(tx);
 
-            // 3️⃣ CREDIT WALLET (FINANCIAL ORDER IMPORTANT)
             ownerWalletService.credit(
                     intent.getOwnerId(),
                     netAmount,
                     tx.getTransactionRef()
             );
 
-            // 🔥 4️⃣ GENERATE RECEIPT (FIXED - WAS MISSING)
             String receiptUrl = generateAndUploadReceipt(tx);
             tx.setReceiptPath(receiptUrl);
             txRepo.save(tx);
 
-            // 5️⃣ PUBLISH EVENT (ASYNC BILLING + NOTIFICATIONS)
             publishPaymentSucceededEvent(intent, tx);
 
             return new PaymentResult(
@@ -165,17 +161,23 @@ public class PaymentService {
         try {
             byte[] pdfBytes = receiptPdfService.generate(tx);
 
-            String receiptKey = "payment-receipts/receipt-" +
-                    tx.getTransactionRef() + ".pdf";
+            if (pdfBytes == null) {
+                log.warn("PDF generation returned null for tx {}", tx.getId());
+                return null;
+            }
 
-            return s3Service.uploadBytes(
+            String fileName = "receipt-" + tx.getTransactionRef() + ".pdf";
+
+            return fileClient.uploadBytes(
                     pdfBytes,
-                    receiptKey,
-                    "application/pdf"
+                    fileName,
+                    "payment-receipts"
             );
+
         } catch (Exception ex) {
-            log.error("Receipt generation failed for tx {}", tx.getId(), ex);
-            return null; // Do NOT fail payment if receipt fails (best practice)
+            log.error("Receipt generation/upload failed for tx {}", tx.getId(), ex);
+            // NEVER FAIL PAYMENT FOR RECEIPT ERROR (FINTECH RULE)
+            return null;
         }
     }
 

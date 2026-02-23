@@ -16,6 +16,13 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class PaymentGateway {
+	
+	  /**
+     * Fallback when:
+     * - Gateway timeout
+     * - Network failure
+     * - Circuit open
+     */
 
     /**
      * PRODUCTION NOTES:
@@ -42,7 +49,6 @@ public class PaymentGateway {
 	        throw new RuntimeException("Gateway processing failed", ex);
 	    }
 	}
-
     /**
      * Fallback when:
      * - Gateway timeout

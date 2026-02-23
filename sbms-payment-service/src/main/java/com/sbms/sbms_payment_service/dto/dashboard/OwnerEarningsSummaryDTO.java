@@ -9,7 +9,6 @@ import lombok.Data;
 public class OwnerEarningsSummaryDTO {
 
     private BigDecimal walletBalance;
-
     private BigDecimal totalEarnings;
     private BigDecimal monthlyEarnings;
 

@@ -36,6 +36,7 @@ public class OwnerWalletService {
         wallet.setLastUpdated(LocalDateTime.now());
         walletRepo.save(wallet);
 
+        
         OwnerWalletTransaction tx = new OwnerWalletTransaction();
         tx.setOwnerId(ownerId);
         tx.setAmount(amount);

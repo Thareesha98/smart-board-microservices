@@ -2,6 +2,7 @@ package com.sbms.sbms_payment_service.client;
 
 import java.time.Duration;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -19,8 +20,8 @@ public class UserClient {
 
     private final WebClient webClient;
 
-    public UserClient(WebClient userServiceWebClient) {
-        this.webClient = userServiceWebClient;
+    public UserClient(@Qualifier("userServiceWebClient") WebClient webClient) {
+        this.webClient = webClient;
     }
 
     @CircuitBreaker(name = "userService", fallbackMethod = "fallbackUser")

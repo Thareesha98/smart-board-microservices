@@ -10,6 +10,7 @@ import com.sbms.sbms_notification_service.model.enums.PaymentIntentStatus;
 import com.sbms.sbms_notification_service.model.enums.PaymentMethod;
 import com.sbms.sbms_payment_service.entity.PaymentIntent;
 import com.sbms.sbms_payment_service.events.PaymentPendingApprovalEvent;
+import com.sbms.sbms_payment_service.publisher.PaymentEventPublisher;
 import com.sbms.sbms_payment_service.repository.PaymentIntentRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -45,7 +46,6 @@ public class CashPaymentService {
 
         intentRepo.save(intent);
 
-        // 🚀 Publish event instead of updating MonthlyBill
         PaymentPendingApprovalEvent event = new PaymentPendingApprovalEvent();
         event.setIntentId(intent.getId());
         event.setStudentId(intent.getStudentId());

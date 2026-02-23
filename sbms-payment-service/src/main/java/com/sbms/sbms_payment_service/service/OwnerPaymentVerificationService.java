@@ -7,24 +7,16 @@ import org.springframework.stereotype.Service;
 import com.sbms.sbms_notification_service.model.enums.PaymentIntentStatus;
 import com.sbms.sbms_notification_service.model.enums.PaymentMethod;
 import com.sbms.sbms_notification_service.model.enums.PaymentStatus;
+import com.sbms.sbms_payment_service.client.FileClient;
 import com.sbms.sbms_payment_service.entity.PaymentIntent;
 import com.sbms.sbms_payment_service.entity.PaymentTransaction;
 import com.sbms.sbms_payment_service.events.PaymentSucceededEvent;
+import com.sbms.sbms_payment_service.publisher.PaymentEventPublisher;
 import com.sbms.sbms_payment_service.repository.PaymentIntentRepository;
 import com.sbms.sbms_payment_service.repository.PaymentTransactionRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-
-
-
-
-
-
-
-
-
-
 
 @Service
 @RequiredArgsConstructor
@@ -35,8 +27,9 @@ public class OwnerPaymentVerificationService {
     private final PaymentFeeCalculator feeCalculator;
     private final OwnerWalletService ownerWalletService;
     private final PaymentReceiptPdfService pdfService;
-    private final S3Service s3Service;
     private final PaymentEventPublisher eventPublisher; // NEW
+    
+    private final FileClient fileClient;
 
     @Transactional
     public void verify(Long txId, Long ownerId, boolean approve) {
@@ -84,10 +77,10 @@ public class OwnerPaymentVerificationService {
 
         // Receipt generation (can later be async service)
         byte[] pdf = pdfService.generate(tx);
-        String receiptUrl = s3Service.uploadBytes(
+        String receiptUrl = fileClient.uploadBytes(
                 pdf,
-                "payment-receipts/" + tx.getTransactionRef() + ".pdf",
-                "application/pdf"
+                "receipt-" + tx.getTransactionRef() + ".pdf",
+                "payment-receipts"
         );
         tx.setReceiptPath(receiptUrl);
         txRepo.save(tx);

@@ -21,7 +21,6 @@ public class OwnerPaymentApprovalController {
     private final PaymentIntentRepository intentRepo;
     private final OwnerPaymentVerificationService verificationService;
 
-    // ✅ FRONTEND COMPATIBLE (UNCHANGED ENDPOINT)
     @GetMapping("/pendingIntents/{ownerId}")
     @PreAuthorize("hasRole('OWNER')")
     public List<PaymentIntent> getAllPendingIntents(@PathVariable Long ownerId) {
@@ -34,8 +33,6 @@ public class OwnerPaymentApprovalController {
 
         return intents;
     }
-
-    // ✅ SAME ENDPOINT - but now event-driven internally
     @PostMapping("/{intentId}/approve")
     @PreAuthorize("hasRole('OWNER')")
     public void approve(
@@ -46,7 +43,6 @@ public class OwnerPaymentApprovalController {
         verificationService.verify(intentId, ownerId, true);
     }
 
-    // (Optional but recommended for symmetry)
     @PostMapping("/{intentId}/reject")
     @PreAuthorize("hasRole('OWNER')")
     public void reject(

@@ -31,7 +31,6 @@ public class PaymentReceiptPdfService {
             PdfWriter.getInstance(doc, out);
             doc.open();
 
-            /* ---------- FETCH REAL DATA VIA CLIENTS ---------- */
             
             // Assuming tx.getIntent() returns the linked Intent record
             Long studentId = tx.getIntent().getStudentId();

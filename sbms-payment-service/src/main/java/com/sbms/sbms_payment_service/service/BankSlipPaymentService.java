@@ -1,5 +1,6 @@
 package com.sbms.sbms_payment_service.service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
@@ -9,8 +10,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.sbms.sbms_notification_service.model.enums.ManualApprovalStatus;
 import com.sbms.sbms_notification_service.model.enums.PaymentIntentStatus;
 import com.sbms.sbms_notification_service.model.enums.PaymentMethod;
+import com.sbms.sbms_payment_service.client.FileClient;
 import com.sbms.sbms_payment_service.entity.PaymentIntent;
 import com.sbms.sbms_payment_service.events.PaymentPendingApprovalEvent;
+import com.sbms.sbms_payment_service.publisher.PaymentEventPublisher;
 import com.sbms.sbms_payment_service.repository.PaymentIntentRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -22,13 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 public class BankSlipPaymentService {
 
     private final PaymentIntentRepository intentRepo;
-    private final S3Service s3Service;
+    private final FileClient fileClient;
     private final PaymentEventPublisher eventPublisher;
 
     // ============================================
-    // ============================================
     @Transactional
-    public void uploadSlip(Long intentId, MultipartFile slip) {
+    public void uploadSlip(Long intentId, MultipartFile slip) throws IOException {
 
         PaymentIntent intent = intentRepo.findById(intentId)
                 .orElseThrow(() -> new RuntimeException("Payment intent not found"));
@@ -36,7 +38,11 @@ public class BankSlipPaymentService {
         validateIntentForSlipSubmission(intent);
 
         // Upload to S3
-        String slipUrl = s3Service.uploadFile(slip, "bank-slips/");
+        String slipUrl = fileClient.uploadBytes(
+                slip.getBytes(),
+                "bank-slip-" + intent.getId() + ".jpg",
+                "bank-slips"
+        );
 
         processSlipSubmission(intent, slipUrl);
     }

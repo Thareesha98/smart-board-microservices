@@ -42,14 +42,12 @@ public class PaymentEventPublisher {
     // =========================
     public void publishPaymentSucceeded(PaymentSucceededEvent event) {
 
-        // 1️⃣ Publish domain event (for Billing, Analytics etc.)
         rabbitTemplate.convertAndSend(
                 exchange,
                 "payment.succeeded",
                 event
         );
 
-        // 2️⃣ ALSO publish Notification-compatible event (CRITICAL FIX)
         Map<String, Object> data = new HashMap<>();
         data.put("intentId", event.getIntentId());
         data.put("transactionId", event.getTransactionId());

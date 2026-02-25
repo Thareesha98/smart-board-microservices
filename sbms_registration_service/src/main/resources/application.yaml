@@ -1,0 +1,3 @@
+spring:
+  application:
+    name: sbms_registration_service 

@@ -2,14 +2,12 @@ package com.sbms.sbms_payment_service.client;
 
 import java.time.Duration;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.sbms.sbms_payment_service.entity.BoardingSnapshot;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -18,15 +16,17 @@ public class BoardingClient {
 
     private final WebClient webClient;
 
-    public BoardingClient(
-            @Qualifier("boardingServiceWebClient") WebClient webClient
-    ) {
-        this.webClient = webClient;
+    public BoardingClient(WebClient.Builder builder) {
+        this.webClient = builder
+                .baseUrl("http://boarding-service:8080")
+                .build();
     }
 
     @CircuitBreaker(name = "boardingService", fallbackMethod = "fallbackBoarding")
-    @TimeLimiter(name = "boardingService")
     public BoardingSnapshot getBoarding(Long boardingId) {
+
+        log.info("Calling Boarding Service for boardingId={}", boardingId);
+
         return webClient.get()
                 .uri("/api/boardings/internal/{boardingId}", boardingId)
                 .retrieve()
@@ -35,7 +35,6 @@ public class BoardingClient {
                 .block();
     }
 
-    //  FALLBACK (PDF MUST NOT CRASH PAYMENT)
     public BoardingSnapshot fallbackBoarding(Long boardingId, Throwable ex) {
         log.error("Boarding service DOWN. Using fallback for boardingId={}", boardingId, ex);
         return new BoardingSnapshot(

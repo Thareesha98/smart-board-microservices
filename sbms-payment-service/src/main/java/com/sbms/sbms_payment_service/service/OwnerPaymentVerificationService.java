@@ -32,11 +32,28 @@ public class OwnerPaymentVerificationService {
     private final FileClient fileClient;
 
     @Transactional
-    public void verify(Long txId, Long ownerId, boolean approve) {
+    public void verify(Long intentId, Long ownerId, boolean approve) {
 
-        PaymentTransaction tx = txRepo.findById(txId)
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+        // 1. Load intent FIRST (not transaction)
+        PaymentIntent intent = intentRepo.findById(intentId)
+                .orElseThrow(() -> new RuntimeException("Payment intent not found"));
 
+        // 2. Try to find existing transaction (card payments will have it)
+        PaymentTransaction tx = txRepo.findByIntentId(intent.getId()).orElse(null);
+
+        // 3. If manual payment (CASH / BANK) and no transaction exists → CREATE ONE
+        if (tx == null) {
+            tx = new PaymentTransaction();
+            tx.setIntent(intent);
+            tx.setAmount(intent.getAmount());
+            tx.setMethod(intent.getMethod()); // CASH or BANK_SLIP
+            tx.setStatus(PaymentStatus.AWAITING_VERIFICATION);
+            tx.setTransactionRef("MANUAL-" + intent.getId() + "-" + System.currentTimeMillis());
+            tx.setVerifiedAt(LocalDateTime.now());
+            txRepo.save(tx);
+        }
+
+        // 4. Safety checks (NOW works for all methods)
         if (tx.getMethod() == PaymentMethod.CARD) {
             throw new RuntimeException("Card payments cannot be manually verified");
         }
@@ -45,8 +62,7 @@ public class OwnerPaymentVerificationService {
             throw new RuntimeException("Transaction not awaiting verification");
         }
 
-        PaymentIntent intent = tx.getIntent();
-
+        // 5. Continue your EXISTING logic (no other changes needed)
         if (!approve) {
             tx.setStatus(PaymentStatus.FAILED);
             tx.setFailureReason("Rejected by owner");
@@ -57,7 +73,7 @@ public class OwnerPaymentVerificationService {
             return;
         }
 
-        // SUCCESS FLOW
+        // SUCCESS FLOW (your existing code below stays SAME)
         tx.setStatus(PaymentStatus.SUCCESS);
         tx.setPaidAt(LocalDateTime.now());
         tx.setVerifiedAt(LocalDateTime.now());
@@ -68,14 +84,12 @@ public class OwnerPaymentVerificationService {
         tx.setGatewayFee(BigDecimal.ZERO);
         tx.setNetAmount(fees.netAmount());
 
-        // Wallet credit (PAYMENT DOMAIN = OK)
         ownerWalletService.credit(
                 intent.getOwnerId(),
                 tx.getNetAmount(),
                 tx.getTransactionRef()
         );
 
-        // Receipt generation (can later be async service)
         byte[] pdf = pdfService.generate(tx);
         String receiptUrl = fileClient.uploadBytes(
                 pdf,
@@ -85,12 +99,11 @@ public class OwnerPaymentVerificationService {
         tx.setReceiptPath(receiptUrl);
         txRepo.save(tx);
 
-        // COMPLETE INTENT
         intent.setStatus(PaymentIntentStatus.SUCCESS);
         intent.setCompletedAt(LocalDateTime.now());
         intentRepo.save(intent);
 
-        // 🚀 PUBLISH EVENT (INSTEAD OF UPDATING BILL TABLE)
+        // publish event (unchanged)
         PaymentSucceededEvent event = new PaymentSucceededEvent();
         event.setIntentId(intent.getId());
         event.setTransactionId(tx.getId());

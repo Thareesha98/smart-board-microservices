@@ -79,6 +79,8 @@ public class SecurityConfig {
                         
                         "/api/maintenance/**" ,
                         
+                        "/api/registrations/**" ,
+                        
                         "/api/files/**", 
                         
                         "/ws/**",

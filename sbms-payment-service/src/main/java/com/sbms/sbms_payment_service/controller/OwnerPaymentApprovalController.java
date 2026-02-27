@@ -2,7 +2,6 @@ package com.sbms.sbms_payment_service.controller;
 
 import java.util.List;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.sbms.sbms_payment_service.entity.PaymentIntent;
@@ -22,7 +21,6 @@ public class OwnerPaymentApprovalController {
     private final OwnerPaymentVerificationService verificationService;
 
     @GetMapping("/pendingIntents/{ownerId}")
-    @PreAuthorize("hasRole('OWNER')")
     public List<PaymentIntent> getAllPendingIntents(@PathVariable Long ownerId) {
 
         List<PaymentIntent> intents = intentRepo.findByOwnerId(ownerId);
@@ -34,7 +32,6 @@ public class OwnerPaymentApprovalController {
         return intents;
     }
     @PostMapping("/{intentId}/approve")
-    @PreAuthorize("hasRole('OWNER')")
     public void approve(
             @PathVariable Long intentId,
             @RequestHeader("X-User-Id") Long ownerId
@@ -44,7 +41,6 @@ public class OwnerPaymentApprovalController {
     }
 
     @PostMapping("/{intentId}/reject")
-    @PreAuthorize("hasRole('OWNER')")
     public void reject(
             @PathVariable Long intentId,
             @RequestHeader("X-User-Id") Long ownerId

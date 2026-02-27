@@ -22,6 +22,8 @@ public interface PaymentTransactionRepository
 
     Optional<PaymentTransaction> findByTransactionRef(String transactionRef);
 
+    Optional<PaymentTransaction> findByIntentId(Long intentId);
+    
     List<PaymentTransaction> findByIntentStudentId(Long studentId);
 
     @Query("""

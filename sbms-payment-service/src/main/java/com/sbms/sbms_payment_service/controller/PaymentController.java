@@ -1,12 +1,11 @@
 package com.sbms.sbms_payment_service.controller;
 
 import java.time.LocalDateTime;
+
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,7 +29,10 @@ import com.sbms.sbms_payment_service.service.PaymentIntentService;
 import com.sbms.sbms_payment_service.service.PaymentService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+
+@Slf4j
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
@@ -79,10 +81,8 @@ public class PaymentController {
     }
     // ===============================
     @PostMapping("/cash/{intentId}")
-    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<String> cashPayment(
-            @PathVariable Long intentId,
-            Authentication authentication
+            @PathVariable Long intentId
     ) {
         // Frontend behavior preserved
         cashPaymentService.createCashPayment(intentId);
@@ -92,7 +92,6 @@ public class PaymentController {
     // ===============================
     // ===============================
     @PostMapping("/bank-slip/{intentId}")
-    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<String> submitBankSlipUrl(
             @PathVariable Long intentId,
             @RequestParam String slipUrl,
@@ -115,10 +114,19 @@ public class PaymentController {
     @GetMapping("/history")
     public ResponseEntity<List<PaymentHistoryDTO>> history(
             @RequestHeader("X-User-Email") String email
+            
     ) {
+    	
+    	 log.info("Received history request. email={}", email);
+    	
+    	 if (email == null || email.isBlank()) {
+    	        throw new RuntimeException("Missing X-User-Email header");
+    	    }
+    	
         UserMinimalDTO student = userClient.findByEmail(email);
 
         if (student == null) {
+        	log.error("UserClient returned NULL for email={}", email);
             throw new RuntimeException("Student record not found in User Service");
         }
 
@@ -129,7 +137,6 @@ public class PaymentController {
     // 6️⃣ KEY MONEY STATUS (CRITICAL FOR FRONTEND UI)
     // ===============================
     @GetMapping("/key-money-status")
-    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<Boolean> keyMoneyStatus(
             @RequestParam Long boardingId,
             @RequestHeader("X-User-Id") Long studentId
@@ -158,7 +165,6 @@ public class PaymentController {
     // 7️⃣ OWNER REJECT (UNCHANGED BEHAVIOR)
     // ===============================
     @PostMapping("/{intentId}/reject")
-    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public void reject(@PathVariable Long intentId) {
 

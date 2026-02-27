@@ -4,13 +4,11 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -19,16 +17,17 @@ public class RegistrationClient {
 
     private final WebClient webClient;
 
-    // 🔥 FIX: Use @Qualifier to resolve bean conflict
-    public RegistrationClient(
-            @Qualifier("registrationServiceWebClient") WebClient webClient
-    ) {
-        this.webClient = webClient;
+    public RegistrationClient(WebClient.Builder builder) {
+        this.webClient = builder
+                .baseUrl("http://registration-service:8080")
+                .build();
     }
 
     @CircuitBreaker(name = "registrationService", fallbackMethod = "fallbackRegistrations")
     @Retry(name = "registrationService")
     public List<ApprovedRegistrationDTO> getApprovedRegistrations(Long boardingId) {
+
+        log.info("Calling Registration Service for boardingId={}", boardingId);
 
         return webClient.get()
                 .uri("/internal/registrations/approved/{boardingId}", boardingId)
@@ -41,7 +40,7 @@ public class RegistrationClient {
 
     public List<ApprovedRegistrationDTO> fallbackRegistrations(Long boardingId, Throwable ex) {
         log.error("Registration service DOWN for boardingId={}", boardingId, ex);
-        return List.of(); // graceful fallback (VERY IMPORTANT)
+        return List.of();
     }
 
     public record ApprovedRegistrationDTO(

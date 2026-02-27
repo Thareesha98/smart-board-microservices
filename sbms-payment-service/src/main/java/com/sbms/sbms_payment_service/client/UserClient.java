@@ -1,18 +1,11 @@
 package com.sbms.sbms_payment_service.client;
 
-import java.time.Duration;
-
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.sbms.sbms_payment_service.dto.user.UserMinimalDTO;
 
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
-import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
@@ -20,48 +13,56 @@ public class UserClient {
 
     private final WebClient webClient;
 
-    public UserClient(@Qualifier("userServiceWebClient") WebClient webClient) {
-        this.webClient = webClient;
+    public UserClient(WebClient.Builder builder) {
+        this.webClient = builder
+                .baseUrl("http://user-service:8080") // K8s DNS (correct)
+                .build();
     }
 
-    @CircuitBreaker(name = "userService", fallbackMethod = "fallbackUser")
-    @Retry(name = "userService")
-    @TimeLimiter(name = "userService")
+    /**
+     * SIMPLE + STABLE (Same pattern as boarding-service)
+     * Remove timeout + reactor operators + resilience conflicts
+     */
     public UserMinimalDTO findByEmail(String email) {
-        return webClient.get()
-                .uri("/api/internal/users/by-email?email={email}", email)
-                .retrieve()
-                .onStatus(
-                        status -> status.is4xxClientError(),
-                        response -> Mono.error(new RuntimeException("User not found"))
-                )
-                .onStatus(
-                        status -> status.is5xxServerError(),
-                        response -> Mono.error(new RuntimeException("User service unavailable"))
-                )
-                .bodyToMono(UserMinimalDTO.class)
-                .timeout(Duration.ofSeconds(3))
-                .block();
+
+        if (email == null || email.isBlank()) {
+            log.error("X-User-Email header is NULL or empty");
+            return null;
+        }
+
+        log.info("Calling User Service (sync) for email={}", email);
+
+        try {
+            UserMinimalDTO user = webClient.get()
+                    .uri(uriBuilder ->
+                            uriBuilder
+                                    .path("/api/internal/users/by-email")
+                                    .queryParam("email", email)
+                                    .build()
+                    )
+                    .retrieve()
+                    .bodyToMono(UserMinimalDTO.class)
+                    .block(); // 🔥 SAME AS YOUR WORKING BOARDING CLIENT
+
+            log.info("User Service SUCCESS -> {}", user);
+            return user;
+
+        } catch (Exception ex) {
+            log.error("User Service call FAILED for email={}", email, ex);
+            return null; // graceful fallback for payment flow
+        }
     }
 
-    @CircuitBreaker(name = "userService", fallbackMethod = "fallbackUserById")
     public UserMinimalDTO getUserMinimal(Long userId) {
-        return webClient.get()
-                .uri("/api/internal/users/{id}/minimal", userId)
-                .retrieve()
-                .bodyToMono(UserMinimalDTO.class)
-                .timeout(Duration.ofSeconds(3))
-                .block();
-    }
-
-    // 🔥 FALLBACK METHODS (VERY IMPORTANT)
-    public UserMinimalDTO fallbackUser(String email, Throwable ex) {
-        log.error("User service DOWN for email={}", email, ex);
-        return null; // graceful degradation
-    }
-
-    public UserMinimalDTO fallbackUserById(Long userId, Throwable ex) {
-        log.error("User service DOWN for id={}", userId, ex);
-        return null;
+        try {
+            return webClient.get()
+                    .uri("/api/internal/users/{id}/minimal", userId)
+                    .retrieve()
+                    .bodyToMono(UserMinimalDTO.class)
+                    .block();
+        } catch (Exception ex) {
+            log.error("User Service minimal fetch FAILED for id={}", userId, ex);
+            return null;
+        }
     }
 }

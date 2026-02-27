@@ -416,7 +416,8 @@ public class RegistrationService {
                             r,
                             s != null ? s.keyMoney() : BigDecimal.ZERO,
                             s != null ? s.pricePerMonth() : BigDecimal.ZERO,
-                            student
+                            student,
+                            s.title()
                     );
                 })
                 .toList();

@@ -32,7 +32,6 @@ public class PaymentReceiptPdfService {
             doc.open();
 
             
-            // Assuming tx.getIntent() returns the linked Intent record
             Long studentId = tx.getIntent().getStudentId();
             Long ownerId   = tx.getIntent().getOwnerId();
             Long boardingId = tx.getIntent().getBoardingId();

@@ -28,7 +28,6 @@ public class PaymentFeeCalculator {
         return new FeeBreakdown(platformFee, gatewayFee, netAmount);
     }
     
-
     public record FeeBreakdown(
             BigDecimal platformFee,
             BigDecimal gatewayFee,

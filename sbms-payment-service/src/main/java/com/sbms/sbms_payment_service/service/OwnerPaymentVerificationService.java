@@ -34,14 +34,11 @@ public class OwnerPaymentVerificationService {
     @Transactional
     public void verify(Long intentId, Long ownerId, boolean approve) {
 
-        // 1. Load intent FIRST (not transaction)
         PaymentIntent intent = intentRepo.findById(intentId)
                 .orElseThrow(() -> new RuntimeException("Payment intent not found"));
 
-        // 2. Try to find existing transaction (card payments will have it)
         PaymentTransaction tx = txRepo.findByIntentId(intent.getId()).orElse(null);
 
-        // 3. If manual payment (CASH / BANK) and no transaction exists → CREATE ONE
         if (tx == null) {
             tx = new PaymentTransaction();
             tx.setIntent(intent);

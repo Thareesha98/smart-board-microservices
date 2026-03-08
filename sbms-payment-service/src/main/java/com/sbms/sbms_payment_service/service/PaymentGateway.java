@@ -17,18 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PaymentGateway {
 	
-	  /**
-     * Fallback when:
-     * - Gateway timeout
-     * - Network failure
-     * - Circuit open
-     */
 
-    /**
-     * PRODUCTION NOTES:
-     * - No TimeLimiter (sync method)
-     * - CircuitBreaker + Retry = correct pattern for payment gateways
-     */
     
 	@CircuitBreaker(name = "payhere", fallbackMethod = "fallbackCharge")
 	@Retry(name = "payhere")

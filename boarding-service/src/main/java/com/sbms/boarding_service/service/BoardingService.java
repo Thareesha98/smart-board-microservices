@@ -5,6 +5,8 @@ import com.sbms.boarding_service.mapper.BoardingMapper;
 import com.sbms.boarding_service.model.Boarding;
 import com.sbms.boarding_service.model.enums.Status;
 import com.sbms.boarding_service.repository.BoardingRepository;
+
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,7 @@ public class BoardingService {
     // -------------------------------------------------------
     // 1) SEARCH (FILTER + KEYWORD)
     // -------------------------------------------------------
+    @Cacheable(value = "boardings_search")
     public Page<BoardingSummaryDTO> searchBoardings(BoardingSearchRequest request) {
 
         List<Boarding> filtered = boardingRepository.findAll().stream()
@@ -59,8 +62,9 @@ public class BoardingService {
     }
 
     // -------------------------------------------------------
-    // 2) FILTER ONLY (NO SEARCH KEYWORD)
+    // 2) FILTER ONLY
     // -------------------------------------------------------
+    @Cacheable(value = "boardings_filtered")
     public Page<BoardingSummaryDTO> getAllFiltered(BoardingSearchRequest request) {
 
         List<Boarding> filtered = boardingRepository.findAll().stream()
@@ -83,8 +87,9 @@ public class BoardingService {
     }
 
     // -------------------------------------------------------
-    // 3) GET ALL (NO FILTERS)
+    // 3) GET ALL
     // -------------------------------------------------------
+    @Cacheable(value = "boardings_all")
     public Page<BoardingSummaryDTO> getAll(BoardingSearchRequest request) {
 
         List<Boarding> approved = boardingRepository.findAll().stream()
@@ -97,7 +102,9 @@ public class BoardingService {
     // -------------------------------------------------------
     // GET ONE (DETAIL)
     // -------------------------------------------------------
+    @Cacheable(value = "boarding", key = "#id")
     public BoardingDetailDTO getById(Long id) {
+
         Boarding b = boardingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(
                         "Boarding not found with id: " + id));
@@ -134,7 +141,11 @@ public class BoardingService {
         Pageable pageable = PageRequest.of(page, size);
         return new PageImpl<>(content, pageable, filtered.size());
     }
-    
+
+    // -------------------------------------------------------
+    // Used by other services (important to cache)
+    // -------------------------------------------------------
+    @Cacheable(value = "approved_boarding", key = "#boardingId")
     public Boarding getApprovedBoardingById(Long boardingId) {
 
         Boarding boarding = boardingRepository.findById(boardingId)

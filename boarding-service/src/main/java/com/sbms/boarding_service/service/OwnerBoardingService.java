@@ -1,6 +1,6 @@
 package com.sbms.boarding_service.service;
 
-
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import com.sbms.boarding_service.dto.boarding.BoardingCreateDTO;
@@ -23,6 +23,7 @@ public class OwnerBoardingService {
         this.boardingRepository = boardingRepository;
     }
 
+    @CacheEvict(value = {"boarding", "boardings_all", "boardings_search"}, allEntries = true)
     public OwnerBoardingResponseDTO create(Long ownerId, BoardingCreateDTO dto) {
 
         Boarding b = BoardingMapper.toEntityFromCreate(dto);
@@ -31,6 +32,7 @@ public class OwnerBoardingService {
         return BoardingMapper.toOwnerResponse(boardingRepository.save(b));
     }
 
+    @CacheEvict(value = {"boarding", "boardings_all", "boardings_search"}, allEntries = true)
     public OwnerBoardingResponseDTO update(Long ownerId, Long boardingId, BoardingUpdateDTO dto) {
 
         Boarding b = getOwnedBoarding(ownerId, boardingId);
@@ -51,6 +53,7 @@ public class OwnerBoardingService {
         return BoardingMapper.toOwnerResponse(boardingRepository.save(b));
     }
 
+    @CacheEvict(value = {"boarding", "boardings_all", "boardings_search"}, allEntries = true)
     public void delete(Long ownerId, Long boardingId) {
         boardingRepository.delete(getOwnedBoarding(ownerId, boardingId));
     }
@@ -62,6 +65,7 @@ public class OwnerBoardingService {
                 .collect(Collectors.toList());
     }
 
+    @CacheEvict(value = {"boarding", "boardings_all"}, allEntries = true)
     public OwnerBoardingResponseDTO boost(Long ownerId, Long boardingId, int days) {
 
         Boarding b = getOwnedBoarding(ownerId, boardingId);
@@ -72,12 +76,14 @@ public class OwnerBoardingService {
     }
 
     private Boarding getOwnedBoarding(Long ownerId, Long boardingId) {
+
         Boarding b = boardingRepository.findById(boardingId)
                 .orElseThrow(() -> new RuntimeException("Boarding not found"));
 
         if (!b.getOwnerId().equals(ownerId)) {
             throw new RuntimeException("Not allowed");
         }
+
         return b;
     }
 }

@@ -47,7 +47,6 @@ public class PaymentService {
             log.warn("Duplicate payment attempt for intent {}", intentId);
             throw new RuntimeException("Payment already completed");
         }
-
         // ===================== CARD PAYMENT (SYNC SUCCESS) =====================
         if (method == PaymentMethod.CARD) {
 

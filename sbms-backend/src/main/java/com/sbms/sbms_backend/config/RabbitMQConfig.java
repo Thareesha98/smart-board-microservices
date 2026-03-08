@@ -3,6 +3,10 @@ package com.sbms.sbms_backend.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -17,6 +21,12 @@ public class RabbitMQConfig {
 
     @Value("${sbms.rabbitmq.exchange:sbms.events}")
     private String exchangeName;
+    
+    
+    @Bean
+    public Queue paymentSucceededQueue() {
+        return new Queue("billing.payment.succeeded.queue", true);
+    }
 
     // global ObjectMapper (configured for Java Time)
     @Bean
@@ -45,5 +55,15 @@ public class RabbitMQConfig {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(messageConverter);
         return template;
+    }
+    
+    
+    @Bean
+    public Binding paymentSucceededBinding(Queue paymentSucceededQueue,
+                                           TopicExchange eventExchange) {
+        return BindingBuilder
+                .bind(paymentSucceededQueue)
+                .to(eventExchange)
+                .with("payment.succeeded"); // must match publisher routing key
     }
 }

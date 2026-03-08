@@ -28,7 +28,6 @@ public class BankSlipPaymentService {
     private final FileClient fileClient;
     private final PaymentEventPublisher eventPublisher;
 
-    // ============================================
     @Transactional
     public void uploadSlip(Long intentId, MultipartFile slip) throws IOException {
 
@@ -59,9 +58,6 @@ public class BankSlipPaymentService {
 
         processSlipSubmission(intent, slipUrl);
     }
-
-    // ============================================
-    // ============================================
     private void validateIntentForSlipSubmission(PaymentIntent intent) {
 
         if (intent.getStatus() == PaymentIntentStatus.SUCCESS) {

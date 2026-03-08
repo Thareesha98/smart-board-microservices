@@ -63,7 +63,6 @@ public class PaymentIntentService {
         };
     }
 
-
     private void validate(CreatePaymentIntentDTO dto) {
 
         if (dto.getStudentId() == null)

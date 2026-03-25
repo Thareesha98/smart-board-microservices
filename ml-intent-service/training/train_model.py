@@ -18,14 +18,13 @@ y = df["intent"]
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
-)
+) 
 
 model = Pipeline([
     ("tfidf", TfidfVectorizer(
         ngram_range=(1,3),
-        analyzer="word",
-        sublinear_tf=True,
-        min_df=1,
+        analyzer="char_wb",
+        min_df=2,
         max_df=0.9
     )),
     ("clf", LogisticRegression(

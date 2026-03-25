@@ -43,6 +43,7 @@ public class StudentBoardingDashboardDTO {
 	    private Double averageRating;
 	    private int reviewCount;
 	    private boolean yourReviewSubmitted;
+	    private String agreementPdfPath;
 
 	    private List<MemberDTO> members;
 

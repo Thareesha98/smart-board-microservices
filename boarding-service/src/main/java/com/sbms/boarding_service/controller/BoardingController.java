@@ -23,7 +23,6 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/boardings")
-@CrossOrigin
 @Tag(
 		name="boardings",
 		description = "Public APIs for searching and viewing boarding advertisements"
@@ -216,4 +215,6 @@ public class BoardingController {
     public BoardingDetailDTO getOne(@PathVariable Long id) {
         return boardingService.getById(id);
     }
+  
+    
 }

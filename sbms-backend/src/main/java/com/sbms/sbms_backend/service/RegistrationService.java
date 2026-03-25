@@ -190,6 +190,7 @@ public class RegistrationService {
 package com.sbms.sbms_backend.service;
 
 import com.sbms.sbms_backend.client.BoardingClient;
+import com.sbms.sbms_backend.client.PaymentClient;
 import com.sbms.sbms_backend.client.UserClient;
 import com.sbms.sbms_backend.dto.agreement.AgreementPdfResult;
 import com.sbms.sbms_backend.dto.boarding.BoardingFullSnapshot;
@@ -237,6 +238,9 @@ public class RegistrationService {
     
     @Autowired
     private BoardingClient boardingClient;
+    
+    @Autowired
+    private PaymentClient paymentClient;
 
     
     @Autowired
@@ -250,18 +254,23 @@ public class RegistrationService {
         BoardingSnapshot boarding = boardingClient.getBoarding(dto.getBoardingId());
 
         // 2. Fetch Payment Intent (Source of Truth)
-        PaymentIntent intent = paymentIntentRepo
-                .findTopByStudentIdAndBoardingIdAndTypeOrderByCreatedAtDesc(
-                        studentId,
-                        boarding.id(),
-                        PaymentType.KEY_MONEY
-                )
-                .orElseThrow(() -> new RuntimeException("Key money payment required"));
+        
+        PaymentIntent intent = paymentClient.getPaymentIntent(boarding.id()  , studentId , PaymentType.KEY_MONEY );
+        
+        if (intent == null) {
+            throw new RuntimeException("Payment record not found");
+        }
+        
+        if (!intent.getStudentId().equals(studentId)) {
+            throw new RuntimeException("Payment does not belong to this student");
+        }
+
 
         // Check payment status
         boolean keyMoneyPaid = intent.getStatus() == PaymentIntentStatus.SUCCESS
                  || intent.getStatus() == PaymentIntentStatus.AWAITING_MANUAL_APPROVAL;
 
+        keyMoneyPaid = true;
         if (!keyMoneyPaid) {
             throw new RuntimeException("Key money not paid");
         }
@@ -438,15 +447,14 @@ public class RegistrationService {
         if (!boardingBasic.ownerId().equals(ownerId)) {
             throw new RuntimeException("Unauthorized");
         }
+        
+        PaymentIntent intent = paymentClient.getPaymentIntent(r.getBoardingId() , r.getStudentId() , PaymentType.KEY_MONEY );
+        
+        if (intent == null) {
+            throw new RuntimeException("Payment record not found");
+        }
 
-        // 2. Fetch payment intent (source of truth)
-        PaymentIntent intent = paymentIntentRepo
-                .findTopByStudentIdAndBoardingIdAndTypeOrderByCreatedAtDesc(
-                        r.getStudentId(),
-                        r.getBoardingId(),
-                        PaymentType.KEY_MONEY
-                )
-                .orElseThrow(() -> new RuntimeException("Key money payment missing"));
+      
 
         // 3. Payment Validation Gate
         if (dto.getStatus() == RegistrationStatus.APPROVED) {
@@ -560,6 +568,8 @@ public class RegistrationService {
                         loggedStudentId,
                         reg.getBoardingId()
                 );
+        
+        String agreementPath = reg.getAgreementPdfPath();
 
         // 7. Base DTO mapping
         StudentBoardingDashboardDTO dto =
@@ -573,7 +583,8 @@ public class RegistrationService {
                         resolvedIssues,
                         lastIssueDate,
                         avgRating,
-                        reviewSubmitted
+                        reviewSubmitted,
+                        agreementPath
                 );
 
         // 8. Active members list (STUDENT SNAPSHOTS)

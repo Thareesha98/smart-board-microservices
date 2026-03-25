@@ -28,6 +28,30 @@ public class RabbitMQConfig {
         return new Queue("billing.payment.succeeded.queue", true);
     }
 
+    
+    
+    
+    @Bean
+    public Queue emergencyQueue() {
+        return new Queue("emergency.queue", true);
+    }
+
+    @Bean
+    public Binding emergencyBinding(
+            Queue emergencyQueue,
+            TopicExchange eventExchange
+    ) {
+        return BindingBuilder
+                .bind(emergencyQueue)
+                .to(eventExchange)
+                .with("emergency.*");
+    }
+    
+    
+    
+    
+    
+    
     // global ObjectMapper (configured for Java Time)
     @Bean
     public ObjectMapper objectMapper() {

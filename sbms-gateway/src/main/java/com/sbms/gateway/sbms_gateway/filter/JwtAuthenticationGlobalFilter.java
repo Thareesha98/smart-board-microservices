@@ -120,7 +120,11 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
         // Allow open endpoints
         if (path.startsWith("/auth/") || path.startsWith("/api/auth/") ||
-            path.startsWith("/actuator/") || path.startsWith("/api/actuator/") || exchange.getRequest().getMethod().matches("OPTIONS")
+            path.startsWith("/actuator/") || path.startsWith("/api/actuator/") || 
+            
+            path.startsWith("/ws/") ||
+            
+            exchange.getRequest().getMethod().matches("OPTIONS")
  ) {
 
             log.debug("🔓 Open endpoint — skipping JWT for {}", path);

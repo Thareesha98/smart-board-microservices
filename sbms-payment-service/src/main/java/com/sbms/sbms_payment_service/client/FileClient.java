@@ -17,25 +17,15 @@ import java.time.Duration;
 public class FileClient {
 
     private final WebClient webClient;
+    
 
-    /**
-     * Use dedicated WebClient built from Builder (NO Qualifier, NO bean conflicts)
-     * File service = sbms-backend (as per your architecture)
-     */
     public FileClient(WebClient.Builder builder) {
         this.webClient = builder
                 .baseUrl("http://sbms-backend:8080") // Kubernetes service DNS
                 .build();
     }
 
-    /**
-     * Upload PDF bytes to File Service
-     * Endpoint: POST /api/files/upload/{folder}
-     * Form field: file (MultipartFile)
-     *
-     * CRITICAL RULE:
-     * Payment MUST NOT fail if file upload fails.
-     */
+   
     @CircuitBreaker(name = "fileService", fallbackMethod = "fallbackUpload")
     @Retry(name = "fileService")
     public String uploadBytes(byte[] bytes, String fileName, String folder) {
@@ -89,10 +79,7 @@ public class FileClient {
         }
     }
 
-    /**
-     * Fallback when File Service is down
-     * Business Rule: NEVER break payment flow
-     */
+   
     public String fallbackUpload(byte[] bytes, String fileName, String folder, Throwable ex) {
         log.error(
                 "File Service DOWN. Fallback triggered. fileName={}, folder={}",
@@ -103,10 +90,7 @@ public class FileClient {
         return null; // graceful degradation (correct for payment systems)
     }
 
-    /**
-     * Delete file from File Service
-     * Endpoint: DELETE /api/files/delete?fileUrl=...
-     */
+   
     @CircuitBreaker(name = "fileService", fallbackMethod = "fallbackDelete")
     public void deleteFile(String fileUrl) {
 

@@ -2,7 +2,9 @@ package com.sbms.sbms_payment_service.service;
 import com.sbms.sbms_notification_service.model.enums.ManualApprovalStatus;
 import com.sbms.sbms_notification_service.model.enums.PaymentIntentStatus;
 import com.sbms.sbms_notification_service.model.enums.PaymentType;
+import com.sbms.sbms_payment_service.client.BoardingClient;
 import com.sbms.sbms_payment_service.dto.CreatePaymentIntentDTO;
+import com.sbms.sbms_payment_service.entity.BoardingSnapshot;
 import com.sbms.sbms_payment_service.entity.PaymentIntent;
 import com.sbms.sbms_payment_service.repository.PaymentIntentRepository;
 
@@ -18,6 +20,7 @@ import java.util.UUID;
 public class PaymentIntentService {
 
     private final PaymentIntentRepository intentRepo;
+    private final BoardingClient boardingClient;
     
     private String generateReferenceId() {
         return "PI-" + System.currentTimeMillis();
@@ -28,7 +31,19 @@ public class PaymentIntentService {
         PaymentIntent intent = new PaymentIntent();
 
         intent.setStudentId(dto.getStudentId());
-        intent.setOwnerId(dto.getOwnerId());
+        
+        
+     //   intent.setOwnerId(dto.getOwnerId());
+        
+        BoardingSnapshot boarding = boardingClient.getBoarding(dto.getBoardingId());
+
+        if (boarding == null || boarding.ownerId() == null) {
+            throw new RuntimeException("Boarding owner not found for boardingId=" + dto.getBoardingId());
+        }
+        
+        intent.setOwnerId(boarding.ownerId());
+        
+        
         intent.setBoardingId(dto.getBoardingId());
         intent.setType(dto.getType());
         intent.setAmount(dto.getAmount());

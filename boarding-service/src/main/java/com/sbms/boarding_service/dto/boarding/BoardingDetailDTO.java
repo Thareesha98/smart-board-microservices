@@ -14,6 +14,7 @@ import com.sbms.boarding_service.model.enums.*;
 
 
 
+
 @Data
 public class BoardingDetailDTO {
 
@@ -42,4 +43,9 @@ public class BoardingDetailDTO {
 
     private boolean boosted;             // from isBosted
     private LocalDateTime boostEndDate;
+    
+    private OwnerDto owner;
+    
+    
+    
 }

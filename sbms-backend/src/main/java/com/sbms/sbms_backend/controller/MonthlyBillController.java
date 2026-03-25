@@ -38,7 +38,15 @@ public class MonthlyBillController {
 
         return billService.getForStudent(studentId);
     }
+		
+		@GetMapping("/internal/student/{userId}")
+		public List<MonthlyBillResponseDTO> getStudentBillsInternal(
+		        @PathVariable Long userId
+		) {
+		    return billService.getForStudent(userId);
+		}
 
+		
        @GetMapping("/owner")
     @PreAuthorize("hasRole('OWNER')")
     public List<MonthlyBillResponseDTO> ownerBills(Authentication authentication) {

@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/boardings/owner")
-@CrossOrigin
 @Tag(
 	    name = "Owner Boardings",
 	    description = "APIs for boarding owners to manage their boardings"

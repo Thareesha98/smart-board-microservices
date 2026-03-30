@@ -32,4 +32,6 @@ public interface OwnerWalletTransactionRepository
 	          AND t.createdAt >= :startDate
 	    """)
 	    BigDecimal earningsSince(Long ownerId, LocalDateTime startDate);
+	    
+	    boolean existsByReferenceAndType(String reference, String type);
 }

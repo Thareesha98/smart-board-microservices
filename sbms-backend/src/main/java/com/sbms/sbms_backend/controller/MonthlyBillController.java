@@ -62,9 +62,6 @@ public class MonthlyBillController {
         return ResponseEntity.ok("Monthly bills generated for " + month);
     }
 
-    /**
-     * Helper method to resolve User ID from the JWT email
-     */
     private Long getUserIdFromAuth(Authentication auth) {
         String email = auth.getName();
         

@@ -46,9 +46,6 @@ public class PaymentController {
     private final PaymentTransactionRepository txRepo;
     private final UserClient userClient;
 
-    // ===============================
-    // 1 CREATE PAYMENT INTENT (UNCHANGED FOR FRONTEND)
-    // ===============================
     @PostMapping("/intent")
     public ResponseEntity<PaymentIntent> createIntent(
             @RequestBody CreatePaymentIntentDTO dto,
@@ -65,8 +62,6 @@ public class PaymentController {
         return ResponseEntity.ok(paymentIntentService.create(dto));
     }
 
-    // ===============================
-    // ===============================
     @PostMapping("/pay/{intentId}")
     public ResponseEntity<PaymentResult> pay(
             @PathVariable Long intentId,
@@ -89,8 +84,6 @@ public class PaymentController {
         return ResponseEntity.ok("CASH_PAYMENT_SUBMITTED");
     }
 
-    // ===============================
-    // ===============================
     @PostMapping("/bank-slip/{intentId}")
     public ResponseEntity<String> submitBankSlipUrl(
             @PathVariable Long intentId,
@@ -110,7 +103,6 @@ public class PaymentController {
         return ResponseEntity.ok("SLIP_SUBMITTED");
     }
 
-    // ===============================
     @GetMapping("/history")
     public ResponseEntity<List<PaymentHistoryDTO>> history(
             @RequestHeader("X-User-Email") String email
@@ -133,9 +125,6 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.history(student.getId()));
     }
 
-    // ===============================
-    // 6️⃣ KEY MONEY STATUS (CRITICAL FOR FRONTEND UI)
-    // ===============================
     @GetMapping("/key-money-status")
     public ResponseEntity<Boolean> keyMoneyStatus(
             @RequestParam Long boardingId,
@@ -161,9 +150,6 @@ public class PaymentController {
         return ResponseEntity.ok(visibleAsPaid);
     }
 
-    // ===============================
-    // 7️⃣ OWNER REJECT (UNCHANGED BEHAVIOR)
-    // ===============================
     @PostMapping("/{intentId}/reject")
     @Transactional
     public void reject(@PathVariable Long intentId) {
@@ -181,9 +167,7 @@ public class PaymentController {
         paymentIntentRepo.save(intent);
     }
 
-    // ===============================
-    // 8️⃣ PAYMENT GATEWAY CALLBACK (CRITICAL)
-    // ===============================
+
     @PostMapping("/gateway/callback")
     @Transactional
     public void handleGatewayCallback(
@@ -211,6 +195,5 @@ public class PaymentController {
 
         paymentIntentRepo.save(intent);
 
-        // NOTE: Event publishing should be inside service layer (best practice)
     }
 }

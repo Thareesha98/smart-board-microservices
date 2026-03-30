@@ -47,7 +47,6 @@ public class PaymentService {
             log.warn("Duplicate payment attempt for intent {}", intentId);
             throw new RuntimeException("Payment already completed");
         }
-        // ===================== CARD PAYMENT (SYNC SUCCESS) =====================
         if (method == PaymentMethod.CARD) {
 
             log.info("Processing CARD payment for intent {}", intentId);
@@ -98,11 +97,10 @@ public class PaymentService {
                     tx.getTransactionRef(),
                     intent.getAmount().doubleValue(),
                     "SUCCESS",
-                    receiptUrl // FIXED: return receipt to frontend
+                    receiptUrl 
             );
         }
 
-        // ===================== EXTERNAL GATEWAY FLOW =====================
         log.info("Processing gateway payment for intent {}", intentId);
 
         intent.setStatus(PaymentIntentStatus.PROCESSING);
@@ -114,7 +112,6 @@ public class PaymentService {
 		try {
 		    gatewayResult = paymentGateway.charge(intent, method);
 		} catch (Exception ex) {
-		    //  CRITICAL: Never leave payment in PROCESSING state
 		    log.error("Gateway exception for intent {}. Marking as FAILED", intentId, ex);
 		
 		    intent.setStatus(PaymentIntentStatus.FAILED);
@@ -124,7 +121,6 @@ public class PaymentService {
 		    throw new RuntimeException("Payment gateway timeout or failure. Please try again.");
 		}
 		
-		// Handle fallback or failure response
 		if (gatewayResult == null || !gatewayResult.isSuccess()) {
 		
 		    log.warn("Gateway returned failure for intent {}", intentId);
@@ -155,7 +151,6 @@ public class PaymentService {
         );
     }
 
-    // ===================== HELPER: RECEIPT GENERATION =====================
     private String generateAndUploadReceipt(PaymentTransaction tx) {
         try {
             byte[] pdfBytes = receiptPdfService.generate(tx);
@@ -180,7 +175,6 @@ public class PaymentService {
         }
     }
 
-    // ===================== HELPER: EVENT PUBLISH =====================
     private void publishPaymentSucceededEvent(PaymentIntent intent, PaymentTransaction tx) {
         PaymentSucceededEvent event = new PaymentSucceededEvent();
         event.setIntentId(intent.getId());
@@ -210,5 +204,40 @@ public class PaymentService {
                     return dto;
                 })
                 .toList();
+    }
+    
+    
+    
+    
+    @Transactional
+    public void rollbackPayment(Long intentId, String reason) {
+
+        PaymentIntent intent = intentRepo.findById(intentId)
+                .orElseThrow(() -> new RuntimeException("Intent not found"));
+
+        if (intent.getStatus() != PaymentIntentStatus.SUCCESS) {
+            log.warn("Rollback skipped. Payment not SUCCESS: {}", intentId);
+            return;
+        }
+
+        log.error("ROLLBACK TRIGGERED for intent {} due to {}", intentId, reason);
+
+        intent.setStatus(PaymentIntentStatus.FAILED);
+        intentRepo.save(intent);
+
+        PaymentTransaction tx = txRepo
+                .findTopByIntentIdOrderByIdDesc(intentId)
+                .orElseThrow();
+
+        tx.setStatus(PaymentStatus.FAILED);
+        txRepo.save(tx);
+        
+        ownerWalletService.debit(
+                intent.getOwnerId(),
+                tx.getNetAmount(),
+                tx.getTransactionRef()
+        );
+
+      
     }
 }

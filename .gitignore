@@ -1,3 +1,12 @@
 # Add this line to your .gitignore
 sbms-backend/src/main/resources/application-kubernetes.yaml
 target/
+boarding-service.zip
+boardings.csv
+boarding-service/opentelemetry-javaagent.jar
+8080
+k8s/
+*.zip
+opentelemetry-javaagent.jar
+nearby.csv
+frontend-deploy/

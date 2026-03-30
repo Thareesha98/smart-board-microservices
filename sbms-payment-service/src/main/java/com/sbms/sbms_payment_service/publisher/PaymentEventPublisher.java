@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import com.sbms.sbms_payment_service.dto.EventMessageDto;
 import com.sbms.sbms_payment_service.events.PaymentPendingApprovalEvent;
 import com.sbms.sbms_payment_service.events.PaymentSucceededEvent;
-
+import com.sbms.sbms_payment_service.service.PaymentRollbackEvent;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -106,5 +106,46 @@ public class PaymentEventPublisher {
         );
 
         log.info("Published PaymentPendingApproval notification event for intent={}", event.getIntentId());
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    public void publishRollbackRequested(PaymentRollbackEvent event) {
+
+        rabbitTemplate.convertAndSend(
+                exchange,
+                "payment.rollback.requested",
+                event
+        );
+
+        // 🔹 Also notify user (important UX)
+        Map<String, Object> data = new HashMap<>();
+        data.put("intentId", event.getIntentId());
+        data.put("transactionId", event.getTransactionId());
+        data.put("reason", event.getReason());
+
+        EventMessageDto notificationEvent = new EventMessageDto(
+                "payment.failed",
+                "payment-service",
+                String.valueOf(event.getIntentId()),
+                null, // optional (you can attach userId if needed)
+                data,
+                Instant.now()
+        );
+
+        rabbitTemplate.convertAndSend(
+                exchange,
+                "payment.failed.notification",
+                notificationEvent
+        );
+
+        log.error(" Published PAYMENT_ROLLBACK_REQUESTED intent={} reason={}",
+                event.getIntentId(),
+                event.getReason());
     }
 }

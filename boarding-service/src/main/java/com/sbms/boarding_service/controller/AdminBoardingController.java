@@ -16,7 +16,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/boardings")
-@CrossOrigin
 @Tag(
     name = "Admin Boardings",
     description = "Admin-only APIs for approving, rejecting, and managing boardings"

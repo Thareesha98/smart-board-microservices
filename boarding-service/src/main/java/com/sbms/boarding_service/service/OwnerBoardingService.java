@@ -32,7 +32,7 @@ public class OwnerBoardingService {
         return BoardingMapper.toOwnerResponse(boardingRepository.save(b));
     }
 
-    @CacheEvict(value = {"boarding", "boardings_all", "boardings_search"}, allEntries = true)
+    @CacheEvict(value = {"boarding","boardings_filtered" ,"boardings_all", "boardings_search"}, allEntries = true)
     public OwnerBoardingResponseDTO update(Long ownerId, Long boardingId, BoardingUpdateDTO dto) {
 
         Boarding b = getOwnedBoarding(ownerId, boardingId);

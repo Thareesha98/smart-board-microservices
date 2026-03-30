@@ -19,16 +19,39 @@ public class ChatBotController {
             @RequestBody ChatRequest request,
             HttpServletRequest httpRequest
     ) {
-        // TRUSTED HEADER FROM GATEWAY
-        String userId = httpRequest.getHeader("X-User-Id");
 
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalStateException("X-User-Id header missing");
+        // -----------------------------
+        // GET USER ID FROM GATEWAY HEADER
+        // -----------------------------
+        String userIdHeader = httpRequest.getHeader("X-User-Id");
+
+        if (userIdHeader == null || userIdHeader.isBlank()) {
+            throw new IllegalStateException("❌ Missing X-User-Id header from gateway");
         }
 
+        // -----------------------------
+        // CONVERT TO LONG (SAFE)
+        // -----------------------------
+        Long userId;
+        try {
+            userId = Long.parseLong(userIdHeader);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("❌ Invalid X-User-Id format");
+        }
+
+        // -----------------------------
+        // SESSION ID (IMPORTANT DESIGN)
+        // -----------------------------
+        // Use userId as sessionId OR combine with timestamp/device
+        String sessionId = "USER_" + userId;
+
+        // -----------------------------
+        // CALL CHATBOT SERVICE
+        // -----------------------------
         return chatbotService.chat(
                 request.getMessage(),
-                userId   // sessionId = userId
+                sessionId,
+                userId
         );
     }
 }

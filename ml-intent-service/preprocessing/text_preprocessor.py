@@ -13,7 +13,19 @@ DOMAIN_KEEP = {
     "rent", "fee", "charge",
     "register", "registration",
     "maintenance",
-    "step", "steps", "how"
+    "step", "steps", "how",
+    "rejection","reject","rejected",
+    "appeal","review",
+    "decline","declined",
+    "reason","why"
+}
+
+SYNONYMS = {
+    "deny":"reject",
+    "denied":"reject",
+    "decline":"reject",
+    "declined":"reject",
+    "notaccepted":"reject",
 }
 
 
@@ -32,6 +44,8 @@ def preprocess(text: str) -> str:
 
     cleaned = []
     for token in tokens:
+        if token in SYNONYMS:
+            token = SYNONYMS[token]
         if token not in STOP_WORDS or token in DOMAIN_KEEP:
             cleaned.append(lemmatizer.lemmatize(token))
 

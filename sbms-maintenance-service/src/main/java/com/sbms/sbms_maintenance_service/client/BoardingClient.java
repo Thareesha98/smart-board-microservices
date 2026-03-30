@@ -7,7 +7,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import com.sbms.sbms_maintenance_service.dto.maintenance.BoardingFullSnapshot;
 import com.sbms.sbms_maintenance_service.dto.maintenance.BoardingOwnerInfo;
+import com.sbms.sbms_maintenance_service.dto.maintenance.BoardingSnapshot;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,6 +44,13 @@ public class BoardingClient {
         return restTemplate.getForObject(
                 BASE + "/" + boardingId + "/owner",
                 BoardingOwnerInfo.class
+        );
+    }
+    
+    public BoardingFullSnapshot getBoarding(Long boardingId) {
+        return restTemplate.getForObject(
+                BASE + "/" + boardingId + "/full",
+                BoardingFullSnapshot.class
         );
     }
 

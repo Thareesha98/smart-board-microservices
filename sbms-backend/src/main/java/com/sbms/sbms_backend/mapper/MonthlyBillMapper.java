@@ -38,4 +38,37 @@ public class MonthlyBillMapper {
 
         return dto;
     }
+    
+    
+    
+    public static MonthlyBillResponseDTO toDTO(MonthlyBill b, 
+            BillDueStatus dueStatus,
+            int dueInDays,
+            Long ownerId, // Passed from Service,
+            String studentName,
+            String title
+        ) {
+    	
+        MonthlyBillResponseDTO dto = new MonthlyBillResponseDTO();
+
+        dto.setId(b.getId());
+        dto.setStudentId(b.getStudentId());
+        dto.setStudentName(studentName);
+        dto.setBoardingId(b.getBoardingId());
+        
+        dto.setOwnerId(ownerId); // Set the passed ID
+
+        dto.setMonth(b.getMonth());
+        dto.setBoardingFee(b.getBoardingFee());
+        dto.setElectricityFee(b.getElectricityFee());
+        dto.setWaterFee(b.getWaterFee());
+        dto.setTotalAmount(b.getTotalAmount());
+        dto.setStatus(b.getStatus());
+        dto.setDueDate(b.getDueDate());
+        dto.setDueStatus(dueStatus);
+        dto.setDueInDays(dueInDays);
+        dto.setBoardingTitle(title);
+
+        return dto;
+    }
 }

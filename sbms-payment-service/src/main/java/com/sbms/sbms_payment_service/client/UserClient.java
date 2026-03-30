@@ -19,10 +19,7 @@ public class UserClient {
                 .build();
     }
 
-    /**
-     * SIMPLE + STABLE (Same pattern as boarding-service)
-     * Remove timeout + reactor operators + resilience conflicts
-     */
+    
     public UserMinimalDTO findByEmail(String email) {
 
         if (email == null || email.isBlank()) {

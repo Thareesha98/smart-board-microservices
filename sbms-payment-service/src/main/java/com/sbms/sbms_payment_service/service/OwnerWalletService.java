@@ -12,7 +12,9 @@ import com.sbms.sbms_payment_service.repository.OwnerWalletTransactionRepository
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OwnerWalletService {
@@ -42,5 +44,48 @@ public class OwnerWalletService {
         tx.setReference(reference);
         tx.setType("CREDIT");
         txRepo.save(tx);
+    }
+    
+    
+    
+    
+    @Transactional
+    public void debit(Long ownerId, BigDecimal amount, String reference) {
+
+        OwnerWallet wallet = walletRepo.findByOwnerId(ownerId)
+                .orElseThrow(() -> new RuntimeException("Wallet not found for owner " + ownerId));
+
+        // =========================
+        // 🔥 IDEMPOTENCY CHECK
+        // =========================
+        boolean alreadyDebited = txRepo
+                .existsByReferenceAndType(reference, "DEBIT");
+
+        if (alreadyDebited) {
+            log.warn("Duplicate rollback prevented for ref={}", reference);
+            return;
+        }
+
+
+        if (wallet.getBalance().compareTo(amount) < 0) {
+            log.error("Insufficient balance for rollback. owner={} balance={} required={}",
+                    ownerId, wallet.getBalance(), amount);
+
+            throw new RuntimeException("Wallet balance insufficient for rollback");
+        }
+
+        wallet.setBalance(wallet.getBalance().subtract(amount));
+        wallet.setLastUpdated(LocalDateTime.now());
+        walletRepo.save(wallet);
+
+        OwnerWalletTransaction tx = new OwnerWalletTransaction();
+        tx.setOwnerId(ownerId);
+        tx.setAmount(amount);
+        tx.setReference(reference);
+        tx.setType("DEBIT");
+        tx.setCreatedAt(LocalDateTime.now());
+        txRepo.save(tx);
+
+        log.error("Wallet debited (ROLLBACK): owner={} amount={} ref={}", ownerId, amount, reference);
     }
 }

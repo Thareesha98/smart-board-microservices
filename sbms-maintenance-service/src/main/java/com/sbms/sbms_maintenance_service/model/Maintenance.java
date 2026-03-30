@@ -1,12 +1,15 @@
 package com.sbms.sbms_maintenance_service.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
 
 import com.sbms.maintenance_service.common.BaseEntity;
+import com.sbms.sbms_maintenance_service.model.enums.MaintenanceIssueType;
 import com.sbms.sbms_maintenance_service.model.enums.MaintenanceStatus;
+import com.sbms.sbms_maintenance_service.model.enums.MaintenanceUrgency;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -30,6 +33,8 @@ public class Maintenance extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    private Long registrationId;
 
     @Column(nullable = false)
     private Long boardingId;
@@ -59,6 +64,33 @@ public class Maintenance extends BaseEntity {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
+    
+    @Column(name = "assigned_technician_id")
+    private Long assignedTechnicianId;
+
+    @Column(nullable = false)
+    private boolean rejectedByTechnician = false;
+
+    @Column(length = 500,nullable = true)
+    private String technicianRejectionReason;
+
+    @Column(precision = 12, scale = 2 , nullable = true)
+    private BigDecimal technicianFee;
+
+    // --- Review & Completion ---
+
+    @Column(nullable = true)
+    private Integer ownerRating = 0;
+
+    @Column(length = 500  , nullable = true)
+    private String ownerComment;
+    
+    private MaintenanceIssueType maintenanceIssueType ; 
+    private MaintenanceUrgency maintenanceUrgency; 
+    
+    
+   
 
     
 }

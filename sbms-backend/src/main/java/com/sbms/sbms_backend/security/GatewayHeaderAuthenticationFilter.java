@@ -25,6 +25,15 @@ public class GatewayHeaderAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+    	
+    	
+    	
+    	String path = request.getRequestURI();
+        // 🚨 Let WebSocket handshake requests pass through completely untouched
+        if (path.startsWith("/backend-ws") || path.startsWith("/ws")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // Headers set by Gateway
         String email = request.getHeader("X-User-Email");

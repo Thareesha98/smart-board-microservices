@@ -12,4 +12,5 @@ extends JpaRepository<Maintenance, Long> {
 List<Maintenance> findByStudentId(Long studentId);
 
 List<Maintenance> findByBoardingIdIn(List<Long> boardingIds);
+List<Maintenance> findByAssignedTechnicianId(Long technicianId);
 }

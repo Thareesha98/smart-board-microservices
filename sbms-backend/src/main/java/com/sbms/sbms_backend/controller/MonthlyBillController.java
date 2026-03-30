@@ -38,7 +38,15 @@ public class MonthlyBillController {
 
         return billService.getForStudent(studentId);
     }
+		
+		@GetMapping("/internal/student/{userId}")
+		public List<MonthlyBillResponseDTO> getStudentBillsInternal(
+		        @PathVariable Long userId
+		) {
+		    return billService.getForStudent(userId);
+		}
 
+		
        @GetMapping("/owner")
     @PreAuthorize("hasRole('OWNER')")
     public List<MonthlyBillResponseDTO> ownerBills(Authentication authentication) {
@@ -54,9 +62,6 @@ public class MonthlyBillController {
         return ResponseEntity.ok("Monthly bills generated for " + month);
     }
 
-    /**
-     * Helper method to resolve User ID from the JWT email
-     */
     private Long getUserIdFromAuth(Authentication auth) {
         String email = auth.getName();
         

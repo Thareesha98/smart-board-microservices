@@ -2,8 +2,16 @@ package com.sbms.gateway.sbms_gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import org.springframework.http.HttpMethod;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -13,24 +21,60 @@ public class SecurityConfig {
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .cors(ServerHttpSecurity.CorsSpec::disable)
+
+                //  ENABLE CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 .authorizeExchange(auth -> auth
-                        // 🔓 OPEN ENDPOINTS (NO JWT REQUIRED)
+
+                        // allow preflight requests
+                        .pathMatchers(HttpMethod.OPTIONS).permitAll()
+                        .pathMatchers("/ws/**").permitAll()
+
+                        // PUBLIC
                         .pathMatchers(
                                 "/api/auth/**",
                                 "/auth/**",
                                 "/actuator/**",
-                                "/internal-debug/**"
+                                "/internal-debug/**",
+                                "/ws/**"
                         ).permitAll()
+                        
+                       
 
-                        // 🔐 EVERYTHING ELSE MUST HAVE JWT
+                        // everything else secured
                         .anyExchange().authenticated()
                 )
 
-                // ✔️ Correct, safe, modern JWT handling (reactive)
                 .oauth2ResourceServer(oauth -> oauth.jwt())
 
                 .build();
+    }
+
+    // CORS CONFIG
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration config = new CorsConfiguration();
+
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://sbms.thareesha.software"
+        ));
+
+        config.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
+        ));
+
+        config.setAllowedHeaders(List.of("*"));
+
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", config);
+
+        return source;
     }
 }

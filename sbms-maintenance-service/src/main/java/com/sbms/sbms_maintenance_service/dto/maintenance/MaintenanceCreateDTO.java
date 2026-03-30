@@ -3,6 +3,9 @@ package com.sbms.sbms_maintenance_service.dto.maintenance;
 
 import java.util.List;
 
+import com.sbms.sbms_maintenance_service.model.enums.MaintenanceIssueType;
+import com.sbms.sbms_maintenance_service.model.enums.MaintenanceUrgency;
+
 import lombok.Data;
 
 @Data
@@ -13,5 +16,14 @@ public class MaintenanceCreateDTO {
     private String description;
     private String studentNote;
     private List<String> imageUrls;
+    
+    
+    
+    
+    
+   
+    private MaintenanceIssueType issueType;
+    private MaintenanceUrgency maintenanceUrgency;
+    
 
 }

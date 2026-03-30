@@ -156,13 +156,15 @@ public class MonthlyBillService {
                             .orElse(null);
                     
                     Long ownerId = (s != null) ? s.ownerId() : null;
+                    String boardingTitle = s.title();
 
                     return MonthlyBillMapper.toDTO(
                             bill,
                             getDueStatus(bill),
                             getDueInDays(bill),
                             ownerId,
-                            studentName
+                            studentName,
+                            boardingTitle
                     );
                 })
                 .toList();

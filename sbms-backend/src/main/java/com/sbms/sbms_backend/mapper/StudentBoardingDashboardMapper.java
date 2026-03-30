@@ -23,7 +23,8 @@ public class StudentBoardingDashboardMapper {
             int resolvedIssues,
             LocalDate lastIssueDate,
             Double avgRating,
-            boolean reviewSubmitted
+            boolean reviewSubmitted,
+            String agreementPath
     ) {
         StudentBoardingDashboardDTO dto = createBaseDTO(reg, currentMonthDue, paymentStatus, 
                                                        lastPaymentDate, openIssues, resolvedIssues, 
@@ -35,6 +36,7 @@ public class StudentBoardingDashboardMapper {
         dto.setBoardingAddress(boarding.address());
         dto.setKeyMoney(boarding.keyMoney());
         dto.setMonthlyPrice(boarding.pricePerMonth());
+        dto.setAgreementPdfPath(agreementPath);
         
         // Detailed data only available in Full Snapshot
         if (boarding.imageUrls() != null && !boarding.imageUrls().isEmpty()) {

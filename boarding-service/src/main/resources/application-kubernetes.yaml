@@ -6,12 +6,11 @@ spring:
     name: boarding-service
   jpa:
     open-in-view: false
-	
   data:
     redis:
       host: redis
       port: 6379
-	  timeout: 60000
+      timeout: 60000
 
 management:
   endpoints:

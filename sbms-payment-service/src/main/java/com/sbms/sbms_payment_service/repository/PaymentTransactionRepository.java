@@ -6,6 +6,7 @@ package com.sbms.sbms_payment_service.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import com.sbms.sbms_notification_service.model.enums.PaymentStatus;
 import com.sbms.sbms_payment_service.entity.PaymentTransaction;
 
 import java.math.BigDecimal;
@@ -25,6 +26,13 @@ public interface PaymentTransactionRepository
     Optional<PaymentTransaction> findByIntentId(Long intentId);
     
     List<PaymentTransaction> findByIntentStudentId(Long studentId);
+    
+    Optional<PaymentTransaction> findTopByIntentIdOrderByIdDesc(Long intentId);
+
+    boolean existsByIntentIdAndStatus(Long intentId, PaymentStatus status);
+
+    List<PaymentTransaction> findByIntentIdOrderByIdDesc(Long intentId);
+
 
     @Query("""
         SELECT COALESCE(SUM(p.platformFee), 0)

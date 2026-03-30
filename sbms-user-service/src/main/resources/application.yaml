@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: sbms-user-service
+
+  datasource:
+    url: jdbc:postgresql://smart-board-db.c7miuo2k4f6h.ap-south-1.rds.amazonaws.com:5432/sbms_user_db
+    username: sbms_user
+    password: user09090909
+    
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  # ---------------- MAIL CONFIGURATION ----------------
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: thareesha01@gmail.com
+    password: foewignzsutmonhm
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+# ---------------- ACTUATOR & MONITORING ----------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+debug: true
+
+server:
+  port: 8080
